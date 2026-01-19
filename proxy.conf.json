@@ -1,0 +1,31 @@
+{
+  "/bitbucket-api": {
+    "target": "https://acapgit.acacceptance.com/",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/bitbucket-api": "/rest/api/latest"
+    },
+    "logLevel": "debug"
+  },
+  "/cursor-api": {
+    "target": "https://api.cursor.com",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/cursor-api": ""
+    },
+    "logLevel": "debug"
+  },
+  "/jira-api": {
+    "target": "https://acacceptance.atlassian.net/",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/jira-api": "/rest/api/3"
+    },
+    "logLevel": "debug"
+  }
+}
+
+
