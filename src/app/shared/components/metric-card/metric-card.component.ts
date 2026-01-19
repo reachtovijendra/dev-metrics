@@ -106,7 +106,8 @@ export class MetricCardComponent {
   iconBg = input<string>('#60a5fa');
   change = input<number>();
   trend = input<'up' | 'down' | 'neutral'>('neutral');
-  format = input<'number' | 'currency' | 'percent'>('number');
+  format = input<'number' | 'currency' | 'percent' | 'decimal'>('number');
+  decimals = input<number>(1);
 
   Math = Math;
 
@@ -117,10 +118,13 @@ export class MetricCardComponent {
         return '$' + val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       case 'percent':
         return val.toFixed(1) + '%';
+      case 'decimal':
+        return val.toFixed(this.decimals());
       default:
         return val.toLocaleString();
     }
   }
 }
+
 
 
