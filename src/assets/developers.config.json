@@ -1,0 +1,27 @@
+{
+  "projectKey": "SER",
+  "developers": [
+    {
+      "name": "Ajit Bandal",
+      "username": "Ajit.Bandal",
+      "email": "Ajit.Bandal@acacceptance.com"
+    },
+    {
+      "name": "Arul Ramakrishnan",
+      "username": "Arul.Ramakrishnan",
+      "email": "Arul.Ramakrishnan@acacceptance.com"
+    },
+    {
+      "name": "Jeff Pierce",
+      "username": "Jeff.Pierce",
+      "email": "Jeff.Pierce@acacceptance.com"
+    },
+    {
+      "name": "Diego Losada Rubio",
+      "username": "Diego.Rubio",
+      "email": "Diego.Rubio@acacceptance.com"
+    }
+  ]
+}
+
+

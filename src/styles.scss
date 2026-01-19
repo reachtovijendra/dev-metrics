@@ -1,0 +1,181 @@
+@use 'primeicons/primeicons.css';
+
+// CSS Variables for custom theming
+:root {
+  --surface-ground: #121212;
+  --surface-section: #1e1e1e;
+  --surface-card: #1e1e1e;
+  --surface-overlay: #2a2a2a;
+  --surface-border: #383838;
+  --surface-hover: #2a2a2a;
+  --text-color: #e0e0e0;
+  --text-color-secondary: #a0a0a0;
+  --primary-color: #60a5fa;
+  --primary-color-text: #ffffff;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+// Global Styles
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--surface-ground);
+  color: var(--text-color);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// Dark mode is default
+body.dark-mode {
+  --surface-ground: #0a0a0a;
+  --surface-section: #141414;
+  --surface-card: #1a1a1a;
+  --surface-overlay: #242424;
+  --surface-border: #2e2e2e;
+  --surface-hover: #262626;
+  --text-color: #fafafa;
+  --text-color-secondary: #a1a1aa;
+}
+
+// Light mode override
+body.light-mode {
+  --surface-ground: #f8fafc;
+  --surface-section: #ffffff;
+  --surface-card: #ffffff;
+  --surface-overlay: #ffffff;
+  --surface-border: #e2e8f0;
+  --surface-hover: #f1f5f9;
+  --text-color: #1e293b;
+  --text-color-secondary: #64748b;
+}
+
+// Scrollbar styling
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-ground);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color-secondary);
+}
+
+// Utility classes
+.text-primary {
+  color: var(--primary-color);
+}
+
+.text-secondary {
+  color: var(--text-color-secondary);
+}
+
+.surface-ground {
+  background-color: var(--surface-ground);
+}
+
+.surface-card {
+  background-color: var(--surface-card);
+}
+
+.surface-section {
+  background-color: var(--surface-section);
+}
+
+// Card styling override
+.p-card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+// Table styling
+.p-datatable {
+  .p-datatable-header {
+    background: var(--surface-section);
+    border-color: var(--surface-border);
+  }
+  
+  .p-datatable-thead > tr > th {
+    background: var(--surface-section);
+    border-color: var(--surface-border);
+    color: var(--text-color);
+  }
+  
+  .p-datatable-tbody > tr {
+    background: var(--surface-card);
+    border-color: var(--surface-border);
+    
+    &:hover {
+      background: var(--surface-hover);
+    }
+  }
+}
+
+// Animation utilities
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+// Layout utilities
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-6 { gap: 1.5rem; }
+.gap-8 { gap: 2rem; }
+
+.p-1 { padding: 0.25rem; }
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 0.75rem; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.p-8 { padding: 2rem; }
+
+.m-0 { margin: 0; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-6 { margin-top: 1.5rem; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+.text-sm { font-size: 0.875rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 1.875rem; }
