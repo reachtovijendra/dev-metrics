@@ -4,9 +4,8 @@ export interface CursorTeamMember {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'member';
-  createdAt: string;
-  lastActiveAt?: string;
+  role: 'admin' | 'member' | 'owner' | 'removed';
+  isRemoved: boolean;
 }
 
 export interface CursorDailyUsageRequest {
@@ -15,29 +14,41 @@ export interface CursorDailyUsageRequest {
 }
 
 export interface CursorDailyUsageResponse {
+  period?: {
+    startDate: number;
+    endDate: number;
+  };
   data: CursorUserDailyUsage[];
 }
 
+// Actual API response format - metrics are at top level, not nested
 export interface CursorUserDailyUsage {
+  date: number;  // Unix timestamp
+  day: string;   // YYYY-MM-DD format
   userId: string;
   email: string;
-  name: string;
-  date: string;
-  metrics: CursorDailyMetrics;
-}
-
-export interface CursorDailyMetrics {
+  isActive: boolean;
   totalLinesAdded: number;
   totalLinesDeleted: number;
   acceptedLinesAdded: number;
   acceptedLinesDeleted: number;
+  totalApplies: number;
+  totalAccepts: number;
+  totalRejects: number;
   totalTabsShown: number;
   totalTabsAccepted: number;
-  totalComposerRequests: number;
-  totalChatRequests: number;
-  totalAgentRequests: number;
-  usageBasedRequests: number;
-  subscriptionIncludedRequests: number;
+  composerRequests: number;
+  chatRequests: number;
+  agentRequests: number;
+  cmdkUsages: number;
+  subscriptionIncludedReqs: number;
+  apiKeyReqs: number;
+  usageBasedReqs: number;
+  bugbotUsages: number;
+  mostUsedModel?: string;
+  applyMostUsedExtension?: string;
+  tabMostUsedExtension?: string;
+  clientVersion?: string;
 }
 
 export interface CursorTeamAnalytics {
@@ -64,6 +75,34 @@ export interface CursorAggregatedMetrics {
   totalRequests: number;
   spendingUsd: number;
   activeDays: number;
+  favoriteModel?: string;
+}
+
+// Spending API Models
+export interface CursorSpendingRequest {
+  searchTerm?: string;
+  sortBy?: 'amount' | 'date' | 'user';
+  sortDirection?: 'asc' | 'desc';
+  page?: number;
+  pageSize?: number;
+}
+
+export interface CursorTeamMemberSpend {
+  userId: string;
+  spendCents: number;
+  overallSpendCents: number;  // This is the actual monthly usage value
+  fastPremiumRequests: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'member' | 'owner' | 'removed';
+  hardLimitOverrideDollars: number;
+}
+
+export interface CursorSpendingResponse {
+  teamMemberSpend: CursorTeamMemberSpend[];
+  subscriptionCycleStart: number;
+  totalMembers: number;
+  totalPages: number;
 }
 
 
