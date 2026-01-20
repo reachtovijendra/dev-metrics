@@ -25,6 +25,9 @@ export interface ConfiguredDeveloper {
   name: string;
   username: string;
   email: string;
+  manager?: string;
+  department?: string;
+  innovationTeam?: string;
 }
 
 // Cache configuration

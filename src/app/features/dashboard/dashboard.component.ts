@@ -1,10 +1,9 @@
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
-import { CalendarModule } from 'primeng/calendar';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TagModule } from 'primeng/tag';
@@ -13,6 +12,7 @@ import { CredentialsService } from '../../core/services/credentials.service';
 import { BitbucketService, DeveloperBitbucketData } from '../../core/services/bitbucket.service';
 import { CursorService } from '../../core/services/cursor.service';
 import { JiraService } from '../../core/services/jira.service';
+import { PageHeaderService } from '../../core/services/page-header.service';
 import { DateRange, MetricsSummary } from '../../core/models/developer.model';
 import { Subscription } from 'rxjs';
 
@@ -35,7 +35,6 @@ interface TopDeveloper {
     CardModule,
     ChartModule,
     TableModule,
-    CalendarModule,
     ButtonModule,
     SkeletonModule,
     TagModule,
@@ -43,32 +42,6 @@ interface TopDeveloper {
   ],
   template: `
     <div class="dashboard">
-      <!-- Header with Date Filter -->
-      <div class="dashboard-header">
-        <div class="header-info">
-          <h2>Overview</h2>
-          <p>Track your team's development metrics across all platforms</p>
-        </div>
-        
-        <div class="date-filter">
-          <p-calendar 
-            [(ngModel)]="dateRange" 
-            selectionMode="range" 
-            [readonlyInput]="true"
-            dateFormat="M dd, yy"
-            placeholder="Select date range"
-            [showIcon]="true"
-            (onSelect)="onDateChange()"
-          />
-          <p-button 
-            icon="pi pi-refresh" 
-            [outlined]="true"
-            (onClick)="loadMetrics()"
-            [loading]="loading()"
-          />
-        </div>
-      </div>
-
       <!-- Connection Status Warning -->
       @if (!hasAnyCredentials()) {
         <div class="no-credentials-banner">
@@ -194,34 +167,6 @@ interface TopDeveloper {
   styles: [`
     .dashboard {
       animation: fadeIn 0.3s ease-out;
-    }
-
-    .dashboard-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 2rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .header-info {
-      h2 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: var(--text-color);
-        margin-bottom: 0.25rem;
-      }
-
-      p {
-        color: var(--text-color-secondary);
-      }
-    }
-
-    .date-filter {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
     }
 
     .no-credentials-banner {
@@ -402,13 +347,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private bitbucketService = inject(BitbucketService);
   private cursorService = inject(CursorService);
   private jiraService = inject(JiraService);
+  private pageHeaderService = inject(PageHeaderService);
   private subscriptions = new Subscription();
 
+  // Date range changes are handled by the refresh callback registered in ngOnInit
+
   loading = signal(false);
-  dateRange: Date[] = [
-    new Date(new Date().setDate(new Date().getDate() - 30)),
-    new Date()
-  ];
 
   summary = signal<MetricsSummary>({
     totalDevelopers: 0,
@@ -510,38 +454,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
   };
 
   ngOnInit(): void {
-    this.loadMetrics();
+    // Set page header info
+    this.pageHeaderService.setPageInfo('Dashboard', 'pi-home', true);
     
-    // Listen for refresh events from header
-    window.addEventListener('refresh-data', () => this.loadMetrics());
+    // Register refresh callback
+    this.pageHeaderService.registerRefreshCallback(() => this.loadMetrics());
+    
+    this.loadMetrics();
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+    this.pageHeaderService.unregisterRefreshCallback();
   }
 
   hasAnyCredentials(): boolean {
     return this.credentialsService.hasAnyCredentials();
   }
 
-  onDateChange(): void {
-    if (this.dateRange.length === 2 && this.dateRange[0] && this.dateRange[1]) {
-      this.loadMetrics();
-    }
-  }
-
   loadMetrics(): void {
     this.loading.set(true);
+    this.pageHeaderService.setLoading(true);
 
-    const range: DateRange = {
-      startDate: this.dateRange[0],
-      endDate: this.dateRange[1]
-    };
-
+    const range = this.pageHeaderService.dateRange();
+    
     // Load developers from config and get their metrics
     this.bitbucketService.getConfiguredDevelopersMetrics(
-      this.dateRange[0],
-      this.dateRange[1],
+      range[0],
+      range[1],
       false
     ).subscribe({
       next: (devs: DeveloperBitbucketData[]) => {
@@ -567,14 +507,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
           totalPrsReviewed: totalReviews,
           totalAiLinesGenerated: 0, // Will be populated from Cursor API
           totalTicketsCompleted: 0, // Will be populated from JIRA API
-          dateRange: range
+          dateRange: { startDate: range[0], endDate: range[1] }
         }));
 
         this.loading.set(false);
+        this.pageHeaderService.setLoading(false);
       },
       error: (err) => {
         console.error('Error loading metrics:', err);
         this.loading.set(false);
+        this.pageHeaderService.setLoading(false);
       }
     });
   }

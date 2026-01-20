@@ -4,39 +4,362 @@
     {
       "name": "Ajit Bandal",
       "username": "Ajit.Bandal",
-      "email": "Ajit.Bandal@acacceptance.com"
+      "email": "Ajit.Bandal@acacceptance.com",
+      "manager": "Vijendra Tadavarthy",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Unified Platform"
     },
     {
       "name": "Arul Ramakrishnan",
       "username": "Arul.Ramakrishnan",
-      "email": "Arul.Ramakrishnan@acacceptance.com"
+      "email": "Arul.Ramakrishnan@acacceptance.com",
+      "manager": "Vijendra Tadavarthy",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Unified Platform"
     },
     {
       "name": "Jeff Pierce",
       "username": "Jeff.Pierce",
-      "email": "Jeff.Pierce@acacceptance.com"
+      "email": "Jeff.Pierce@acacceptance.com",
+      "manager": "Vijendra Tadavarthy",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Unified Platform"
     },
     {
       "name": "Diego Losada Rubio",
       "username": "Diego.Rubio",
-      "email": "Diego.Rubio@acacceptance.com"
+      "email": "Diego.Rubio@acacceptance.com",
+      "manager": "Vijendra Tadavarthy",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Unified Platform"
     },
     {
       "name": "Yunpeng Cheng",
       "username": "Yunpeng.Cheng",
-      "email": "Yunpeng.Cheng@acacceptance.com"
+      "email": "Yunpeng.Cheng@acacceptance.com",
+      "manager": "Vijendra Tadavarthy",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Unified Platform"
     },
     {
       "name": "Lee Hudson",
       "username": "Lee.Hudson",
-      "email": "Lee.Hudson@acacceptance.com"
+      "email": "Lee.Hudson@acacceptance.com",
+      "manager": "Vijendra Tadavarthy",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Unified Platform"
     },
     {
       "name": "Andres Zapata",
       "username": "Andres.Zapata",
-      "email": "Andres.Zapata@acacceptance.com"
+      "email": "Andres.Zapata@acacceptance.com",
+      "manager": "Vijendra Tadavarthy",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Unified Platform"
+    },
+    {
+      "name": "Nitin Reddy Mamilla",
+      "username": "NitinReddy.Mamilla",
+      "email": "NitinReddy.Mamilla@acacceptance.com",
+      "manager": "Vijendra Tadavarthy",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Unified Platform"
+    },
+    {
+      "name": "Christian Haulbrook",
+      "username": "Christian.Haulbrook",
+      "email": "Christian.Haulbrook@acacceptance.com",
+      "manager": "Vijendra Tadavarthy",
+      "department": "Database Engineering",
+      "innovationTeam": "SRVC - Unified Platform"
+    },
+    {
+      "name": "Nirmalyan Mohanarangan",
+      "username": "N.Mohanarangan",
+      "email": "N.Mohanarangan@acacceptance.com",
+      "manager": "Vijendra Tadavarthy",
+      "department": "Database Engineering",
+      "innovationTeam": "SRVC - Unified Platform"
+    },
+    {
+      "name": "Terry Smith",
+      "username": "Terry.Smith",
+      "email": "Terry.Smith@acacceptance.com",
+      "manager": "Mugdha Patil",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Servicing Ops"
+    },
+    {
+      "name": "Gavin Puckett",
+      "username": "Gavin.Puckett",
+      "email": "Gavin.Puckett@acacceptance.com",
+      "manager": "Mugdha Patil",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Servicing Ops"
+    },
+    {
+      "name": "Logan O'Quinn",
+      "username": "Logan.OQuinn",
+      "email": "Logan.OQuinn@acacceptance.com",
+      "manager": "Mugdha Patil",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Servicing Ops"
+    },
+    {
+      "name": "Battuul Batzorig",
+      "username": "Battuul.Batzorig",
+      "email": "Battuul.Batzorig@acacceptance.com",
+      "manager": "Mugdha Patil",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Servicing Ops"
+    },
+    {
+      "name": "Jessica Xayasane",
+      "username": "Jessica.Xayasane",
+      "email": "Jessica.Xayasane@acacceptance.com",
+      "manager": "Mugdha Patil",
+      "department": "Database Engineering",
+      "innovationTeam": "SRVC - Servicing Ops"
+    },
+    {
+      "name": "Logan Thompson",
+      "username": "Logan.Thompson",
+      "email": "Logan.Thompson@acacceptance.com",
+      "manager": "Shankar Kumar",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Training & Performance"
+    },
+    {
+      "name": "John Lockard",
+      "username": "John.Lockard",
+      "email": "John.Lockard@acacceptance.com",
+      "manager": "Shankar Kumar",
+      "department": "Software Engineering",
+      "innovationTeam": "SRVC - Training & Performance"
+    },
+    {
+      "name": "Nataliya Vykhovanets",
+      "username": "N.Vykhovanets",
+      "email": "N.Vykhovanets@acacceptance.com",
+      "manager": "Shankar Kumar",
+      "department": "Database Engineering",
+      "innovationTeam": "SRVC - Training & Performance"
+    },
+    {
+      "name": "Andrew Eubanks",
+      "username": "Andrew.Eubanks",
+      "email": "Andrew.Eubanks@acacceptance.com",
+      "manager": "Darryl Prebble",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - AOS"
+    },
+    {
+      "name": "Dhananjay Nikam",
+      "username": "Dhananjay.Nikam",
+      "email": "Dhananjay.Nikam@acacceptance.com",
+      "manager": "Darryl Prebble",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - AOS"
+    },
+    {
+      "name": "John Evans",
+      "username": "John.Evans",
+      "email": "John.Evans@acacceptance.com",
+      "manager": "Darryl Prebble",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Ancillary Apps"
+    },
+    {
+      "name": "Joshua Dupre",
+      "username": "Joshua.Dupre",
+      "email": "Joshua.Dupre@acacceptance.com",
+      "manager": "Darryl Prebble",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Ancillary Apps"
+    },
+    {
+      "name": "Lucia Alonso Guzman",
+      "username": "Lucia.AlonsoGuzman",
+      "email": "Lucia.AlonsoGuzman@acacceptance.com",
+      "manager": "Darryl Prebble",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - AOS"
+    },
+    {
+      "name": "Mahesh Kosgi",
+      "username": "Mahesh.Kosgi",
+      "email": "Mahesh.Kosgi@acacceptance.com",
+      "manager": "Darryl Prebble",
+      "department": "Database Engineering",
+      "innovationTeam": "ORGN - Ancillary Apps"
+    },
+    {
+      "name": "Michaela Greff",
+      "username": "Michaela.Greff",
+      "email": "Michaela.Greff@acacceptance.com",
+      "manager": "Darryl Prebble",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Ancillary Apps"
+    },
+    {
+      "name": "Sergey Kaplun",
+      "username": "Sergey.Kaplun",
+      "email": "Sergey.Kaplun@acacceptance.com",
+      "manager": "Darryl Prebble",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Ancillary Apps"
+    },
+    {
+      "name": "Vinay Chennuru",
+      "username": "Vinay.Chennuru",
+      "email": "Vinay.Chennuru@acacceptance.com",
+      "manager": "Darryl Prebble",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Ancillary Apps"
+    },
+    {
+      "name": "Saketh Gourisetty",
+      "username": "Saketh.Gourisetty",
+      "email": "Saketh.Gourisetty@acacceptance.com",
+      "manager": "Darryl Prebble",
+      "department": "Database Engineering",
+      "innovationTeam": "ORGN - AOS"
+    },
+    {
+      "name": "Samhith Gardas",
+      "username": "Samhith.Gardas",
+      "email": "Samhith.Gardas@acacceptance.com",
+      "manager": "Suresh Tipparthi",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Spartan"
+    },
+    {
+      "name": "Susan Li",
+      "username": "Susan.Li",
+      "email": "Susan.Li@acacceptance.com",
+      "manager": "Suresh Tipparthi",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Spartan"
+    },
+    {
+      "name": "Linn White",
+      "username": "Linn.White",
+      "email": "Linn.White@acacceptance.com",
+      "manager": "Suresh Tipparthi",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Pricing"
+    },
+    {
+      "name": "Kathryn Jenkins",
+      "username": "Kathryn.Jenkins",
+      "email": "Kathryn.Jenkins@acacceptance.com",
+      "manager": "Suresh Tipparthi",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Pricing"
+    },
+    {
+      "name": "Aditya Sahani",
+      "username": "Aditya.Sahani",
+      "email": "Aditya.Sahani@acacceptance.com",
+      "manager": "Suresh Tipparthi",
+      "department": "Database Engineering",
+      "innovationTeam": "ORGN - Pricing"
+    },
+    {
+      "name": "Adam Kellam",
+      "username": "Adam.Kellam",
+      "email": "Adam.Kellam@acacceptance.com",
+      "manager": "Rachel Swain",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Partner Onboarding"
+    },
+    {
+      "name": "Daniel Simpson",
+      "username": "Daniel.Simpson",
+      "email": "Daniel.Simpson@acacceptance.com",
+      "manager": "Rachel Swain",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Partner Onboarding"
+    },
+    {
+      "name": "Prajwal Sunder",
+      "username": "Prajwal.Sunder",
+      "email": "Prajwal.Sunder@acacceptance.com",
+      "manager": "Rachel Swain",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Partner Onboarding"
+    },
+    {
+      "name": "Alberto Medina",
+      "username": "Alberto.Medina",
+      "email": "Alberto.Medina@acacceptance.com",
+      "manager": "Rachel Swain",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Digital Highways"
+    },
+    {
+      "name": "Jonas McCartha",
+      "username": "Jonas.McCartha",
+      "email": "Jonas.McCartha@acacceptance.com",
+      "manager": "Rachel Swain",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Digital Highways"
+    },
+    {
+      "name": "Curt King",
+      "username": "Curtis.King",
+      "email": "Curtis.King@acacceptance.com",
+      "manager": "Rachel Swain",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Digital Highways"
+    },
+    {
+      "name": "Cveta Shalevska",
+      "username": "Cveta.Shalevska",
+      "email": "Cveta.Shalevska@acacceptance.com",
+      "manager": "Rachel Swain",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Digital Highways"
+    },
+    {
+      "name": "Pranitha Cherukupally",
+      "username": "Pranitha.Cherukupally",
+      "email": "Pranitha.Cherukupally@acacceptance.com",
+      "manager": "Rachel Swain",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Dealer Ops"
+    },
+    {
+      "name": "Sean McLaughlin",
+      "username": "Sean.McLaughlin",
+      "email": "Sean.McLaughlin@acacceptance.com",
+      "manager": "Rachel Swain",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Dealer Ops"
+    },
+    {
+      "name": "Christopher Sanders",
+      "username": "Christopher.Sanders",
+      "email": "Christopher.Sanders@acacceptance.com",
+      "manager": "Rachel Swain",
+      "department": "Software Engineering",
+      "innovationTeam": "ORGN - Dealer Ops"
+    },
+    {
+      "name": "Sana Syed",
+      "username": "Sana.Syed",
+      "email": "Sana.Syed@acacceptance.com",
+      "manager": "Rachel Swain",
+      "department": "Database Engineering",
+      "innovationTeam": "ORGN - Dealer Ops"
+    },
+    {
+      "name": "Srujan Shetty",
+      "username": "Srujan.Shetty",
+      "email": "Srujan.Shetty@acacceptance.com",
+      "manager": "Rachel Swain",
+      "department": "Database Engineering",
+      "innovationTeam": "ORGN - Partner Onboarding"
     }
   ]
 }
-
-

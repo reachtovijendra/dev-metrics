@@ -1,17 +1,18 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, effect, untracked, Injector } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { ChartModule } from 'primeng/chart';
-import { CalendarModule } from 'primeng/calendar';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { MetricCardComponent } from '../../shared/components/metric-card/metric-card.component';
 import { CredentialsService } from '../../core/services/credentials.service';
 import { JiraService } from '../../core/services/jira.service';
-import { BitbucketService } from '../../core/services/bitbucket.service';
+import { BitbucketService, ConfiguredDeveloper } from '../../core/services/bitbucket.service';
+import { FilterService } from '../../core/services/filter.service';
+import { PageHeaderService } from '../../core/services/page-header.service';
 
 interface DeveloperJiraMetrics {
   name: string;
@@ -21,6 +22,10 @@ interface DeveloperJiraMetrics {
   defectsFixed: number;
   avgResolutionHours: number;
   inProgress: number;
+  // Filter fields
+  manager: string;
+  department: string;
+  innovationTeam: string;
 }
 
 @Component({
@@ -32,7 +37,6 @@ interface DeveloperJiraMetrics {
     CardModule,
     TableModule,
     ChartModule,
-    CalendarModule,
     ButtonModule,
     TagModule,
     ProgressBarModule,
@@ -40,31 +44,6 @@ interface DeveloperJiraMetrics {
   ],
   template: `
     <div class="jira-page">
-      <div class="page-header">
-        <div class="header-info">
-          <h2><i class="pi pi-ticket"></i> JIRA Metrics</h2>
-          <p>Ticket completion, defect tracking, and team productivity from JIRA Cloud</p>
-        </div>
-        
-        <div class="date-filter">
-          <p-calendar 
-            [(ngModel)]="dateRange" 
-            selectionMode="range" 
-            [readonlyInput]="true"
-            dateFormat="M dd, yy"
-            placeholder="Select date range"
-            [showIcon]="true"
-            (onSelect)="onDateChange()"
-          />
-          <p-button 
-            icon="pi pi-refresh" 
-            [outlined]="true"
-            (onClick)="loadData()"
-            [loading]="loading()"
-          />
-        </div>
-      </div>
-
       @if (!credentialsService.hasJiraCredentials()) {
         <div class="no-credentials">
           <i class="pi pi-lock"></i>
@@ -222,41 +201,6 @@ interface DeveloperJiraMetrics {
   styles: [`
     .jira-page {
       animation: fadeIn 0.3s ease-out;
-    }
-
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 2rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .header-info {
-      h2 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: var(--text-color);
-        margin-bottom: 0.25rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-
-        i {
-          color: #06b6d4;
-        }
-      }
-
-      p {
-        color: var(--text-color-secondary);
-      }
-    }
-
-    .date-filter {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
     }
 
     .no-credentials {
@@ -485,16 +429,15 @@ interface DeveloperJiraMetrics {
     }
   `]
 })
-export class JiraComponent implements OnInit {
+export class JiraComponent implements OnInit, OnDestroy {
   credentialsService = inject(CredentialsService);
   private jiraService = inject(JiraService);
   private bitbucketService = inject(BitbucketService);
+  private filterService = inject(FilterService);
+  private pageHeaderService = inject(PageHeaderService);
+  private injector = inject(Injector);
 
   loading = signal(false);
-  dateRange: Date[] = [
-    new Date(new Date().setDate(new Date().getDate() - 30)),
-    new Date()
-  ];
 
   totalMetrics = signal({
     ticketsCompleted: 0,
@@ -507,6 +450,12 @@ export class JiraComponent implements OnInit {
   });
 
   developers: DeveloperJiraMetrics[] = [];
+  
+  // All developers (unfiltered) for filtering
+  private allDevelopers: DeveloperJiraMetrics[] = [];
+  
+  // Store configured developers for filter fields
+  private configuredDevelopers: ConfiguredDeveloper[] = [];
 
   completionTrendChart = {
     labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
@@ -589,29 +538,55 @@ export class JiraComponent implements OnInit {
   };
 
   ngOnInit(): void {
+    // Set page header info
+    this.pageHeaderService.setPageInfo('JIRA Metrics', 'pi-ticket', true);
+    
+    // Register refresh callback
+    this.pageHeaderService.registerRefreshCallback(() => this.loadData());
+    
+    // Setup filter effect with proper injection context
+    effect(() => {
+      // Read the signals to track them
+      const managers = this.filterService.selectedManagers();
+      const departments = this.filterService.selectedDepartments();
+      const teams = this.filterService.selectedInnovationTeams();
+      
+      // Use untracked to prevent signal writes from causing re-runs
+      untracked(() => {
+        if (this.allDevelopers.length > 0) {
+          this.applyFilters();
+        }
+      });
+    }, { injector: this.injector });
+    
     this.loadDevelopers();
   }
 
-  onDateChange(): void {
-    if (this.dateRange.length === 2 && this.dateRange[0] && this.dateRange[1]) {
-      this.loadData();
-    }
+  ngOnDestroy(): void {
+    this.pageHeaderService.unregisterRefreshCallback();
   }
 
   loadDevelopers(): void {
     // Load developers from config file
     this.bitbucketService.getConfiguredDevelopers().subscribe({
       next: (config) => {
+        this.configuredDevelopers = config.developers;
+        
         // Initialize with placeholder data (JIRA API not yet integrated)
-        this.developers = config.developers.map(dev => ({
+        this.allDevelopers = config.developers.map(dev => ({
           name: dev.name,
           ticketsDevDone: 0,
           ticketsQaDone: 0,
           defectsInjected: 0,
           defectsFixed: 0,
           avgResolutionHours: 0,
-          inProgress: 0
+          inProgress: 0,
+          manager: dev.manager || '',
+          department: dev.department || '',
+          innovationTeam: dev.innovationTeam || ''
         }));
+        
+        this.applyFilters();
       },
       error: (err) => console.error('Error loading developers:', err)
     });
@@ -619,8 +594,12 @@ export class JiraComponent implements OnInit {
 
   loadData(): void {
     this.loading.set(true);
+    this.pageHeaderService.setLoading(true);
     // JIRA API integration would go here
-    setTimeout(() => this.loading.set(false), 500);
+    setTimeout(() => {
+      this.loading.set(false);
+      this.pageHeaderService.setLoading(false);
+    }, 500);
   }
 
   getInitials(name: string): string {
@@ -655,6 +634,11 @@ export class JiraComponent implements OnInit {
     if (ratio >= 2) return 'success';
     if (ratio >= 1) return 'info';
     return 'warn';
+  }
+
+  // Filter methods - uses global FilterService
+  applyFilters(): void {
+    this.developers = this.filterService.applyAllFilters([...this.allDevelopers]);
   }
 }
 

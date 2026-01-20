@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
@@ -6,7 +6,6 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
-import { CalendarModule } from 'primeng/calendar';
 import { DropdownModule } from 'primeng/dropdown';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
@@ -16,6 +15,7 @@ import { DividerModule } from 'primeng/divider';
 import { TooltipModule } from 'primeng/tooltip';
 import { CredentialsService } from '../../core/services/credentials.service';
 import { BitbucketService, DeveloperBitbucketData } from '../../core/services/bitbucket.service';
+import { PageHeaderService } from '../../core/services/page-header.service';
 
 interface DeveloperSummary {
   id: string;
@@ -51,7 +51,6 @@ interface DeveloperSummary {
     ButtonModule,
     InputTextModule,
     TagModule,
-    CalendarModule,
     DropdownModule,
     SkeletonModule,
     ProgressSpinnerModule,
@@ -63,47 +62,24 @@ interface DeveloperSummary {
   ],
   template: `
     <div class="developers-page">
-      <div class="page-header">
-        <div class="header-info">
-          <h2><i class="pi pi-users"></i> Developers</h2>
-          <p>Comprehensive view of all developer metrics across platforms</p>
-        </div>
-        
-        <div class="header-actions">
-          <p-calendar 
-            [(ngModel)]="dateRange" 
-            selectionMode="range" 
-            [readonlyInput]="true"
-            dateFormat="M dd, yy"
-            placeholder="Select date range"
-            [showIcon]="true"
-            [maxDate]="maxDate"
-            (onSelect)="onDateChange()"
-            styleClass="date-picker"
+      <!-- Page-level filters -->
+      <div class="page-filters">
+        <span class="p-input-icon-left search-wrapper">
+          <i class="pi pi-search"></i>
+          <input 
+            pInputText 
+            [(ngModel)]="searchTerm"
+            placeholder="Search developers..."
+            (input)="onSearch()"
           />
-          <span class="p-input-icon-left search-wrapper">
-            <i class="pi pi-search"></i>
-            <input 
-              pInputText 
-              [(ngModel)]="searchTerm"
-              placeholder="Search developers..."
-              (input)="onSearch()"
-            />
-          </span>
-          <p-dropdown 
-            [options]="teamOptions" 
-            [(ngModel)]="selectedTeam"
-            placeholder="All Teams"
-            [showClear]="true"
-            (onChange)="onFilterChange()"
-          />
-          <p-button 
-            icon="pi pi-refresh" 
-            [loading]="loading()"
-            (onClick)="refreshData()"
-            pTooltip="Force refresh from Bitbucket (bypasses cache)"
-          />
-        </div>
+        </span>
+        <p-dropdown 
+          [options]="teamOptions" 
+          [(ngModel)]="selectedTeam"
+          placeholder="All Teams"
+          [showClear]="true"
+          (onChange)="onFilterChange()"
+        />
       </div>
 
       <!-- Summary Stats -->
@@ -443,39 +419,11 @@ interface DeveloperSummary {
       animation: fadeIn 0.3s ease-out;
     }
 
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 2rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .header-info {
-      h2 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: var(--text-color);
-        margin-bottom: 0.25rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-
-        i {
-          color: #8b5cf6;
-        }
-      }
-
-      p {
-        color: var(--text-color-secondary);
-      }
-    }
-
-    .header-actions {
+    .page-filters {
       display: flex;
       gap: 1rem;
       align-items: center;
+      margin-bottom: 1.5rem;
     }
 
     .search-wrapper {
@@ -1112,20 +1060,16 @@ interface DeveloperSummary {
     }
   `]
 })
-export class DevelopersComponent implements OnInit {
+export class DevelopersComponent implements OnInit, OnDestroy {
   credentialsService = inject(CredentialsService);
   private bitbucketService = inject(BitbucketService);
+  private pageHeaderService = inject(PageHeaderService);
+
+  // Date range changes are handled by the refresh callback registered in ngOnInit
 
   loading = signal(false);
   searchTerm = '';
   selectedTeam: string | null = null;
-  
-  // Date range - default to last 7 days
-  dateRange: Date[] = [
-    new Date(new Date().setDate(new Date().getDate() - 7)),
-    new Date()
-  ];
-  maxDate: Date = new Date();
 
   teamOptions = [
     { label: 'Engineering', value: 'Engineering' },
@@ -1177,26 +1121,29 @@ export class DevelopersComponent implements OnInit {
   };
 
   ngOnInit(): void {
+    // Set page header info
+    this.pageHeaderService.setPageInfo('Developers', 'pi-users', true);
+    
+    // Register refresh callback
+    this.pageHeaderService.registerRefreshCallback(() => this.loadDevelopers(true));
+    
     if (this.credentialsService.hasBitbucketCredentials()) {
       this.loadDevelopers();
     }
   }
 
-  /** Handle date range change */
-  onDateChange(): void {
-    if (this.dateRange.length === 2 && this.dateRange[0] && this.dateRange[1]) {
-      // Cache is now keyed by date range - no need to clear, just load
-      // If this exact range was cached, it will be instant; otherwise fresh fetch
-      this.loadDevelopers();
-    }
+  ngOnDestroy(): void {
+    this.pageHeaderService.unregisterRefreshCallback();
   }
 
   loadDevelopers(forceRefresh: boolean = false): void {
     this.loading.set(true);
+    this.pageHeaderService.setLoading(true);
     
     // Pass actual date range to service (cache key is based on dates, project, and developers)
-    const startDate = this.dateRange[0];
-    const endDate = this.dateRange[1];
+    const range = this.pageHeaderService.dateRange();
+    const startDate = range[0];
+    const endDate = range[1];
     
     this.bitbucketService.getConfiguredDevelopersMetrics(startDate, endDate, forceRefresh).subscribe({
       next: (devData) => {
@@ -1227,17 +1174,14 @@ export class DevelopersComponent implements OnInit {
 
         this.filteredDevelopers = [...this.developers];
         this.loading.set(false);
+        this.pageHeaderService.setLoading(false);
       },
       error: (err) => {
         console.error('Error loading developers:', err);
         this.loading.set(false);
+        this.pageHeaderService.setLoading(false);
       }
     });
-  }
-
-  /** Force refresh data from Bitbucket (bypasses cache) */
-  refreshData(): void {
-    this.loadDevelopers(true);
   }
 
   private calculateScore(dev: DeveloperBitbucketData): number {

@@ -13,7 +13,7 @@ import { HeaderComponent } from '../header/header.component';
       <app-sidebar (collapseChange)="onSidebarCollapse($event)" />
       
       <div class="main-content">
-        <app-header [pageTitle]="pageTitle()" />
+        <app-header />
         
         <main class="content-area">
           <router-outlet />
@@ -45,23 +45,30 @@ import { HeaderComponent } from '../header/header.component';
       flex: 1;
       padding: 1.5rem;
       overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    @media (max-width: 1024px) {
+      .main-content {
+        margin-left: 70px;
+      }
     }
 
     @media (max-width: 768px) {
       .main-content {
-        margin-left: 0;
+        margin-left: 70px;
+      }
+      
+      .content-area {
+        padding: 1rem;
       }
     }
   `]
 })
 export class MainLayoutComponent {
   sidebarCollapsed = signal(false);
-  pageTitle = signal('Dashboard');
 
   onSidebarCollapse(collapsed: boolean): void {
     this.sidebarCollapsed.set(collapsed);
   }
 }
-
-
-
