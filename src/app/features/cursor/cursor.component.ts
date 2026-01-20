@@ -1,22 +1,26 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed, effect, untracked, Injector } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { ChartModule } from 'primeng/chart';
-import { CalendarModule } from 'primeng/calendar';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { TooltipModule } from 'primeng/tooltip';
 import { MetricCardComponent } from '../../shared/components/metric-card/metric-card.component';
+import { ConfiguredDeveloper } from '../../core/services/bitbucket.service';
 import { CredentialsService } from '../../core/services/credentials.service';
 import { CursorService } from '../../core/services/cursor.service';
 import { BitbucketService } from '../../core/services/bitbucket.service';
+import { FilterService } from '../../core/services/filter.service';
+import { PageHeaderService } from '../../core/services/page-header.service';
 import { forkJoin } from 'rxjs';
 
 interface DeveloperCursorMetrics {
   name: string;
+  email: string;
   totalLinesGenerated: number;
   acceptedLines: number;
   totalTabs: number;
@@ -27,6 +31,10 @@ interface DeveloperCursorMetrics {
   billingCycleSpending: number; // Full billing cycle spending
   favoriteModel: string;
   excluded: boolean; // Whether to exclude from team totals
+  // Filter fields
+  manager: string;
+  department: string;
+  innovationTeam: string;
 }
 
 @Component({
@@ -38,47 +46,17 @@ interface DeveloperCursorMetrics {
     CardModule,
     TableModule,
     ChartModule,
-    CalendarModule,
     ButtonModule,
     TagModule,
     ProgressBarModule,
     SelectButtonModule,
+    TooltipModule,
     MetricCardComponent
   ],
   template: `
     <div class="cursor-page">
-      <div class="page-header">
-        <div class="header-info">
-          <h2><i class="pi pi-sparkles"></i> Cursor AI Metrics</h2>
-          <p>AI-assisted coding statistics, tab completions, and usage analytics</p>
-        </div>
-        
-        <div class="date-filter">
-          <div class="date-picker-wrapper">
-            <i class="pi pi-calendar date-icon"></i>
-            <p-calendar 
-              [(ngModel)]="dateRange" 
-              selectionMode="range" 
-              [readonlyInput]="true"
-              dateFormat="M dd, yy"
-              placeholder="Select date range"
-              [showIcon]="false"
-              (onSelect)="onDateChange()"
-              styleClass="custom-calendar"
-            />
-          </div>
-          <button 
-            class="refresh-btn" 
-            [class.loading]="loading()"
-            (click)="loadData()"
-            [disabled]="loading()"
-          >
-            <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="view-mode-section">
+      <!-- View Mode Section -->
+      <div class="controls-row">
         <div class="segmented-control" [class.billing-active]="spendingMode === 'billingCycle'">
           <div class="segment-slider"></div>
           <button 
@@ -266,33 +244,22 @@ interface DeveloperCursorMetrics {
       animation: fadeIn 0.3s ease-out;
     }
 
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    
-    .view-mode-section {
+    .controls-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1.5rem;
       gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
     }
 
     .segmented-control {
       position: relative;
       display: flex;
-      background: linear-gradient(145deg, #1a1a2e, #16162a);
+      background: var(--p-content-background);
       border-radius: 14px;
       padding: 5px;
-      border: 1px solid rgba(139, 92, 246, 0.2);
-      box-shadow: 
-        inset 0 2px 4px rgba(0, 0, 0, 0.3),
-        0 4px 12px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--p-content-border-color);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     .segment-slider {
@@ -326,7 +293,7 @@ interface DeveloperCursorMetrics {
       padding: 0.75rem 1.5rem;
       background: transparent;
       border: none;
-      color: rgba(255, 255, 255, 0.5);
+      color: var(--p-text-muted-color);
       font-size: 0.875rem;
       font-weight: 500;
       cursor: pointer;
@@ -339,7 +306,7 @@ interface DeveloperCursorMetrics {
       }
 
       &:hover:not(.active) {
-        color: rgba(255, 255, 255, 0.75);
+        color: var(--p-text-color);
       }
 
       &.active {
@@ -349,99 +316,6 @@ interface DeveloperCursorMetrics {
         i {
           transform: scale(1.1);
         }
-      }
-    }
-
-    .header-info {
-      h2 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: var(--text-color);
-        margin-bottom: 0.25rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-
-        i {
-          color: #f59e0b;
-        }
-      }
-
-      p {
-        color: var(--text-color-secondary);
-      }
-    }
-
-    .date-filter {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-    }
-
-    .date-picker-wrapper {
-      display: flex;
-      align-items: center;
-      background: var(--surface-card);
-      border: 1px solid var(--surface-border);
-      border-radius: 8px;
-      padding: 0.5rem 1rem;
-      gap: 0.75rem;
-      
-      .date-icon {
-        color: #8b5cf6;
-        font-size: 1rem;
-      }
-    }
-
-    :host ::ng-deep .custom-calendar {
-      .p-inputtext {
-        background: transparent;
-        border: none;
-        padding: 0;
-        font-size: 0.9rem;
-        font-weight: 500;
-        color: var(--text-color);
-        width: auto;
-        min-width: 180px;
-        
-        &:focus {
-          box-shadow: none;
-        }
-      }
-    }
-
-    .refresh-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      border: 1px solid var(--surface-border);
-      background: var(--surface-card);
-      color: var(--text-color-secondary);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      
-      &:hover:not(:disabled) {
-        background: var(--surface-hover);
-        color: var(--text-color);
-        border-color: #8b5cf6;
-      }
-      
-      &:disabled {
-        cursor: not-allowed;
-        opacity: 0.7;
-      }
-      
-      &.loading {
-        background: rgba(139, 92, 246, 0.15);
-        border-color: #8b5cf6;
-        color: #8b5cf6;
-      }
-      
-      i {
-        font-size: 1rem;
       }
     }
 
@@ -759,19 +633,18 @@ interface DeveloperCursorMetrics {
     }
   `]
 })
-export class CursorComponent implements OnInit {
+export class CursorComponent implements OnInit, OnDestroy {
   credentialsService = inject(CredentialsService);
   private cursorService = inject(CursorService);
   private bitbucketService = inject(BitbucketService);
+  private filterService = inject(FilterService);
+  private pageHeaderService = inject(PageHeaderService);
+  private injector = inject(Injector);
 
   loading = signal(false);
-  dateRange: Date[] = [
-    new Date(new Date().setDate(new Date().getDate() - 7)), // Default to last 7 days
-    new Date()
-  ];
 
   // Store user's custom date range (to restore when switching back from billing cycle)
-  private userDateRange: Date[] = [...this.dateRange];
+  private userDateRange: Date[] = [...this.pageHeaderService.dateRange()];
 
   // Spending mode toggle
   spendingMode: 'dateRange' | 'billingCycle' = 'dateRange';
@@ -809,7 +682,10 @@ export class CursorComponent implements OnInit {
   developers: DeveloperCursorMetrics[] = [];
   
   // Store configured developers for API calls
-  private configuredDevelopers: { name: string; email: string }[] = [];
+  private configuredDevelopers: ConfiguredDeveloper[] = [];
+
+  // All developers (unfiltered) for metrics calculation
+  private allDevelopers: DeveloperCursorMetrics[] = [];
 
   generationTrendChart: any = {
     labels: [],
@@ -886,17 +762,48 @@ export class CursorComponent implements OnInit {
   };
 
   ngOnInit(): void {
+    // Set page header info
+    this.pageHeaderService.setPageInfo('Cursor AI Metrics', 'pi-sparkles', true);
+    
+    // Register refresh callback - called when date changes or user clicks refresh
+    this.pageHeaderService.registerRefreshCallback(() => {
+      this.onManualDateChange();
+      this.cursorService.clearCache();
+      this.loadData(true);
+    });
+    
+    // Setup filter effect with proper injection context
+    effect(() => {
+      // Read the signals to track them
+      const managers = this.filterService.selectedManagers();
+      const departments = this.filterService.selectedDepartments();
+      const teams = this.filterService.selectedInnovationTeams();
+      
+      // Use untracked to prevent signal writes from causing re-runs
+      untracked(() => {
+        if (this.allDevelopers.length > 0) {
+          this.applyFilters();
+        }
+      });
+    }, { injector: this.injector });
+    
     this.loadDevelopersAndData();
   }
 
-  onDateChange(): void {
-    if (this.dateRange.length === 2 && this.dateRange[0] && this.dateRange[1]) {
-      // Save user's custom date range
-      this.userDateRange = [...this.dateRange];
-      // Reset to date range mode when user manually changes dates
-      this.spendingMode = 'dateRange';
-      this.cursorService.clearCache();
-      this.loadData(true);
+  ngOnDestroy(): void {
+    this.pageHeaderService.unregisterRefreshCallback();
+  }
+
+  onManualDateChange(): void {
+    // Called when user manually changes dates via header calendar
+    // Save user's custom date range and reset to date range mode
+    const range = this.pageHeaderService.dateRange();
+    if (range.length === 2 && range[0] && range[1]) {
+      this.userDateRange = [...range];
+      // Only reset spending mode if not already in date range mode
+      if (this.spendingMode !== 'dateRange') {
+        this.spendingMode = 'dateRange';
+      }
     }
   }
 
@@ -904,10 +811,8 @@ export class CursorComponent implements OnInit {
     // Load developers from config file first
     this.bitbucketService.getConfiguredDevelopers().subscribe({
       next: (config) => {
-        this.configuredDevelopers = config.developers.map(dev => ({
-          name: dev.name,
-          email: dev.email
-        }));
+        // Store full developer config with all fields
+        this.configuredDevelopers = config.developers;
         
         // Now load Cursor data
         if (this.credentialsService.hasCursorCredentials()) {
@@ -925,8 +830,9 @@ export class CursorComponent implements OnInit {
   }
 
   private initializeEmptyData(): void {
-    this.developers = this.configuredDevelopers.map(dev => ({
+    this.allDevelopers = this.configuredDevelopers.map(dev => ({
       name: dev.name,
+      email: dev.email,
       totalLinesGenerated: 0,
       acceptedLines: 0,
       totalTabs: 0,
@@ -936,9 +842,13 @@ export class CursorComponent implements OnInit {
       spending: 0,
       billingCycleSpending: 0,
       favoriteModel: '—',
-      excluded: false
+      excluded: false,
+      manager: dev.manager || '',
+      department: dev.department || '',
+      innovationTeam: dev.innovationTeam || ''
     }));
 
+    this.applyFilters();
     this.updateCharts();
   }
 
@@ -951,15 +861,15 @@ export class CursorComponent implements OnInit {
       // Switch to billing cycle dates
       if (this.billingCycleStartDate && this.billingCycleEndDate) {
         // Save user's current date range before switching
-        this.userDateRange = [...this.dateRange];
+        this.userDateRange = [...this.pageHeaderService.dateRange()];
         // Update date range to billing cycle
-        this.dateRange = [this.billingCycleStartDate, this.billingCycleEndDate];
+        this.pageHeaderService.setDateRange([this.billingCycleStartDate, this.billingCycleEndDate]);
         // Reload all data with billing cycle dates
         this.loadData();
       }
     } else {
       // Switch back to user's custom date range
-      this.dateRange = [...this.userDateRange];
+      this.pageHeaderService.setDateRange([...this.userDateRange]);
       // Reload all data with user's date range
       this.loadData();
     }
@@ -971,6 +881,7 @@ export class CursorComponent implements OnInit {
     }
 
     this.loading.set(true);
+    this.pageHeaderService.setLoading(true);
     
     // Clear current data while loading to show user that data is being refreshed
     this.developers = [];
@@ -1008,6 +919,7 @@ export class CursorComponent implements OnInit {
         // Determine the date range to use for API calls
         // When in billing cycle mode, use billing cycle dates (capped for API limits)
         // When in date range mode, use user's selected date range
+        const headerDateRange = this.pageHeaderService.dateRange();
         let dateRange: { startDate: Date; endDate: Date };
         let billingCycleRange: { startDate: Date; endDate: Date };
         
@@ -1023,8 +935,8 @@ export class CursorComponent implements OnInit {
         } else {
           // For date range mode, use user's selected date range
           dateRange = {
-            startDate: this.dateRange[0],
-            endDate: this.dateRange[1]
+            startDate: headerDateRange[0],
+            endDate: headerDateRange[1]
           };
           // Billing cycle range is for calculating full billing cycle metrics
           const today = new Date();
@@ -1087,11 +999,16 @@ export class CursorComponent implements OnInit {
             ) / 100;
 
             // Build developers array with both DATE RANGE and BILLING CYCLE spending
-            this.developers = metrics.map(m => {
+            this.allDevelopers = metrics.map(m => {
               const emailLower = m.email.toLowerCase();
               const billingCycleSpend = billingSpendingByEmail.get(emailLower) || 0;
               const billingCycleRequests = billingCycleRequestsByEmail.get(emailLower) || 0;
               const dateRangeRequests = m.totalRequests;
+
+              // Find the configured developer to get filter fields
+              const configDev = this.configuredDevelopers.find(
+                cd => cd.email.toLowerCase() === emailLower
+              );
 
               // Calculate date range spending based on request proportion
               let dateRangeSpend = 0;
@@ -1102,6 +1019,7 @@ export class CursorComponent implements OnInit {
 
               return {
                 name: m.name,
+                email: m.email,
                 totalLinesGenerated: m.totalLinesGenerated,
                 acceptedLines: m.acceptedLinesAdded,
                 totalTabs: m.totalTabsShown,
@@ -1111,7 +1029,10 @@ export class CursorComponent implements OnInit {
                 spending: dateRangeSpend,
                 billingCycleSpending: billingCycleSpend, // Store full billing cycle spending
                 favoriteModel: m.favoriteModel || '—',
-                excluded: false
+                excluded: false,
+                manager: configDev?.manager || '',
+                department: configDev?.department || '',
+                innovationTeam: configDev?.innovationTeam || ''
               };
             }).sort((a, b) => {
               // Sort by displayed spending (highest first) - depends on current mode
@@ -1119,6 +1040,9 @@ export class CursorComponent implements OnInit {
               const bSpending = this.spendingMode === 'billingCycle' ? b.billingCycleSpending : b.spending;
               return bSpending - aSpending;
             });
+            
+            // Apply filters to populate displayed developers
+            this.applyFilters();
 
             // Calculate total spending for configured developers
             const dateRangeTeamSpending = this.developers.reduce(
@@ -1154,11 +1078,13 @@ export class CursorComponent implements OnInit {
 
             this.updateCharts();
             this.loading.set(false);
+            this.pageHeaderService.setLoading(false);
           },
           error: (err) => {
             console.error('Error fetching Cursor metrics:', err);
             this.initializeEmptyData();
             this.loading.set(false);
+            this.pageHeaderService.setLoading(false);
           }
         });
       },
@@ -1166,6 +1092,7 @@ export class CursorComponent implements OnInit {
         console.error('Error fetching spending data:', err);
         this.initializeEmptyData();
         this.loading.set(false);
+        this.pageHeaderService.setLoading(false);
       }
     });
   }
@@ -1243,6 +1170,23 @@ export class CursorComponent implements OnInit {
       spending: dateRangeTeamSpending,
       billingCycleTeamSpending: billingCycleTeamSpending
     });
+  }
+
+  // Filter methods - uses global FilterService
+  applyFilters(): void {
+    // Start with all developers and apply global filters
+    let filtered = this.filterService.applyAllFilters([...this.allDevelopers]);
+
+    // Sort by spending (highest first)
+    filtered.sort((a, b) => {
+      const aSpending = this.spendingMode === 'billingCycle' ? a.billingCycleSpending : a.spending;
+      const bSpending = this.spendingMode === 'billingCycle' ? b.billingCycleSpending : b.spending;
+      return bSpending - aSpending;
+    });
+
+    this.developers = filtered;
+    this.recalculateTotals();
+    this.updateCharts();
   }
 }
 

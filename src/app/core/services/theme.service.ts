@@ -33,11 +33,18 @@ export class ThemeService {
   }
 
   private applyTheme(theme: ThemeMode): void {
+    // Apply to document root (html) for PrimeNG dark mode support
+    const root = document.documentElement;
     const body = document.body;
+    
     if (theme === 'dark') {
+      root.classList.remove('light-mode');
+      root.classList.add('dark-mode');
       body.classList.remove('light-mode');
       body.classList.add('dark-mode');
     } else {
+      root.classList.remove('dark-mode');
+      root.classList.add('light-mode');
       body.classList.remove('dark-mode');
       body.classList.add('light-mode');
     }

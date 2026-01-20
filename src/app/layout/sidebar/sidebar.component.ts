@@ -1,4 +1,4 @@
-import { Component, inject, output } from '@angular/core';
+import { Component, inject, output, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -80,6 +80,7 @@ interface NavItem {
     .sidebar {
       width: 260px;
       height: 100vh;
+      max-height: 100vh;
       background: var(--surface-card);
       border-right: 1px solid var(--surface-border);
       display: flex;
@@ -89,6 +90,7 @@ interface NavItem {
       left: 0;
       top: 0;
       z-index: 100;
+      overflow: hidden;
 
       &.collapsed {
         width: 70px;
@@ -98,6 +100,7 @@ interface NavItem {
     .sidebar-header {
       padding: 1.5rem;
       border-bottom: 1px solid var(--surface-border);
+      flex-shrink: 0;
     }
 
     .logo {
@@ -172,19 +175,20 @@ interface NavItem {
     .sidebar-footer {
       padding: 1rem;
       border-top: 1px solid var(--surface-border);
+      flex-shrink: 0;
     }
 
     .connection-status {
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
     }
 
     .status-item {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.5rem 0;
+      padding: 0.375rem 0;
       color: var(--text-color-secondary);
-      font-size: 0.875rem;
+      font-size: 0.8rem;
 
       i {
         width: 16px;
@@ -213,11 +217,14 @@ interface NavItem {
     }
   `]
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit, OnDestroy {
   credentialsService = inject(CredentialsService);
   
   collapsed = false;
   collapseChange = output<boolean>();
+  
+  private mediaQuery: MediaQueryList | null = null;
+  private mediaQueryListener: ((e: MediaQueryListEvent) => void) | null = null;
 
   navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'pi-home', route: '/dashboard' },
@@ -227,6 +234,34 @@ export class SidebarComponent {
     { label: 'Developers', icon: 'pi-users', route: '/developers' },
     { label: 'Settings', icon: 'pi-cog', route: '/settings' }
   ];
+
+  ngOnInit(): void {
+    // Auto-collapse sidebar on smaller screens
+    if (typeof window !== 'undefined') {
+      this.mediaQuery = window.matchMedia('(max-width: 1024px)');
+      
+      // Set initial state based on screen size
+      if (this.mediaQuery.matches) {
+        this.collapsed = true;
+        this.collapseChange.emit(true);
+      }
+      
+      // Listen for screen size changes
+      this.mediaQueryListener = (e: MediaQueryListEvent) => {
+        if (e.matches && !this.collapsed) {
+          this.collapsed = true;
+          this.collapseChange.emit(true);
+        }
+      };
+      this.mediaQuery.addEventListener('change', this.mediaQueryListener);
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.mediaQuery && this.mediaQueryListener) {
+      this.mediaQuery.removeEventListener('change', this.mediaQueryListener);
+    }
+  }
 
   toggleCollapse(): void {
     this.collapsed = !this.collapsed;

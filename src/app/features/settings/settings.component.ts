@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
@@ -13,6 +13,7 @@ import { CredentialsService } from '../../core/services/credentials.service';
 import { BitbucketService } from '../../core/services/bitbucket.service';
 import { CursorService } from '../../core/services/cursor.service';
 import { JiraService } from '../../core/services/jira.service';
+import { PageHeaderService } from '../../core/services/page-header.service';
 import { BitbucketCredentials, CursorCredentials, JiraCredentials } from '../../core/models/credentials.model';
 
 @Component({
@@ -32,9 +33,6 @@ import { BitbucketCredentials, CursorCredentials, JiraCredentials } from '../../
   providers: [MessageService],
   template: `
     <div class="settings-page">
-      <h2 class="page-header">API Settings</h2>
-      <p class="page-description">Configure your API credentials to connect to external services.</p>
-
       <div class="settings-grid">
         <!-- Bitbucket Data Center -->
         <p-card styleClass="settings-card">
@@ -238,18 +236,6 @@ import { BitbucketCredentials, CursorCredentials, JiraCredentials } from '../../
       margin: 0 auto;
     }
 
-    .page-header {
-      font-size: 1.75rem;
-      font-weight: 600;
-      color: var(--text-color);
-      margin-bottom: 0.5rem;
-    }
-
-    .page-description {
-      color: var(--text-color-secondary);
-      margin-bottom: 2rem;
-    }
-
     .settings-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -384,12 +370,22 @@ import { BitbucketCredentials, CursorCredentials, JiraCredentials } from '../../
     }
   `]
 })
-export class SettingsComponent {
+export class SettingsComponent implements OnInit, OnDestroy {
   credentialsService = inject(CredentialsService);
   private bitbucketService = inject(BitbucketService);
   private cursorService = inject(CursorService);
   private jiraService = inject(JiraService);
   private messageService = inject(MessageService);
+  private pageHeaderService = inject(PageHeaderService);
+
+  ngOnInit(): void {
+    // Set page header info - Settings page doesn't need date picker
+    this.pageHeaderService.setPageInfo('Settings', 'pi-cog', false);
+  }
+
+  ngOnDestroy(): void {
+    // Settings page doesn't use refresh callback
+  }
 
   testingBitbucket = signal(false);
   testingCursor = signal(false);
