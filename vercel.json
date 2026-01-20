@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/dev-metrics/browser",
+  "framework": "angular",
+  "rewrites": [
+    { "source": "/api/cursor/:path*", "destination": "/api/cursor/:path*" },
+    { "source": "/api/jira/:path*", "destination": "/api/jira/:path*" },
+    { "source": "/api/bitbucket/:path*", "destination": "/api/bitbucket/:path*" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
+

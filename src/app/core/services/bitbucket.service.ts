@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, forkJoin, of, from } from 'rxjs';
 import { map, catchError, switchMap, shareReplay, mergeMap, toArray, delay, concatMap } from 'rxjs/operators';
 import { CredentialsService } from './credentials.service';
+import { EnvironmentService } from './environment.service';
 import {
   BitbucketPagedResponse,
   BitbucketProject,
@@ -53,10 +54,11 @@ interface CachedData {
 export class BitbucketService {
   private http = inject(HttpClient);
   private credentialsService = inject(CredentialsService);
+  private environmentService = inject(EnvironmentService);
 
   private get baseUrl(): string {
-    // Use same pattern as metric-miner - /rest/api/latest is proxied to Bitbucket
-    return '/rest/api/latest';
+    // Dynamic URL: uses Vercel serverless in production, local proxy in dev
+    return this.environmentService.getBitbucketApiUrl();
   }
 
   private getPagedResults<T>(url: string, params?: HttpParams): Observable<T[]> {

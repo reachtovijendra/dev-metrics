@@ -2,11 +2,28 @@ import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpErrorResponse } from
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { CredentialsService } from '../services/credentials.service';
+import { EnvironmentService } from '../services/environment.service';
 
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
   const credentialsService = inject(CredentialsService);
+  const environmentService = inject(EnvironmentService);
   
   let modifiedReq = req;
+  
+  // In production, Vercel serverless functions handle authentication
+  // Skip adding client-side auth headers for /api/* routes
+  if (req.url.startsWith('/api/')) {
+    return next(req).pipe(
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 401) {
+          console.error('Authentication failed. Server credentials may not be configured.');
+        }
+        return throwError(() => error);
+      })
+    );
+  }
+  
+  // Development mode: add client-side authentication headers
   
   // Bitbucket Data Center - use HTTP Access Token with Bearer auth
   if (req.url.includes('/rest/api/') || req.url.includes('/rest/search/')) {

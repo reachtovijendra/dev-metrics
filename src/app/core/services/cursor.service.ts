@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, forkJoin } from 'rxjs';
 import { map, catchError, tap, switchMap } from 'rxjs/operators';
 import { CredentialsService } from './credentials.service';
+import { EnvironmentService } from './environment.service';
 import {
   CursorTeamMember,
   CursorDailyUsageRequest,
@@ -108,9 +109,12 @@ interface CachedCursorData {
 export class CursorService {
   private http = inject(HttpClient);
   private credentialsService = inject(CredentialsService);
+  private environmentService = inject(EnvironmentService);
 
-  // Use proxy path for development (handles CORS)
-  private readonly baseUrl = '/cursor-api';
+  // Dynamic base URL: uses Vercel serverless in production, local proxy in dev
+  private get baseUrl(): string {
+    return this.environmentService.getCursorApiUrl();
+  }
   
   private readonly CACHE_KEY = 'cursor_metrics_cache';
   private readonly CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes

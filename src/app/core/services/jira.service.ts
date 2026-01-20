@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, of, forkJoin } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import { CredentialsService } from './credentials.service';
+import { EnvironmentService } from './environment.service';
 import {
   JiraSearchResponse,
   JiraIssue,
@@ -17,11 +18,11 @@ import { JiraMetrics, DateRange } from '../models/developer.model';
 export class JiraService {
   private http = inject(HttpClient);
   private credentialsService = inject(CredentialsService);
+  private environmentService = inject(EnvironmentService);
 
   private get baseUrl(): string {
-    // Use proxy path for development to avoid CORS issues
-    // The proxy.conf.json forwards /jira-api to the actual server
-    return '/jira-api';
+    // Dynamic URL: uses Vercel serverless in production, local proxy in dev
+    return this.environmentService.getJiraApiUrl();
   }
 
   private getAuthHeaders(): HttpHeaders {
