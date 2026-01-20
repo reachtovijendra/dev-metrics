@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit, OnDestroy, effect, untracked, Injector } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { ChartModule } from 'primeng/chart';
@@ -34,6 +35,7 @@ interface DeveloperJiraMetrics {
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     CardModule,
     TableModule,
     ChartModule,

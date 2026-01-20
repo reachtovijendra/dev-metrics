@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
@@ -32,6 +33,7 @@ interface TopDeveloper {
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     CardModule,
     ChartModule,
     TableModule,
