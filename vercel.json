@@ -2,12 +2,15 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/dev-metrics/browser",
-  "framework": "angular",
+  "functions": {
+    "api/*.ts": {
+      "runtime": "@vercel/node@3.0.0"
+    }
+  },
   "rewrites": [
-    { "source": "/api/cursor/:path*", "destination": "/api/cursor/:path*" },
-    { "source": "/api/jira/:path*", "destination": "/api/jira/:path*" },
-    { "source": "/api/bitbucket/:path*", "destination": "/api/bitbucket/:path*" },
+    { "source": "/api/cursor/:path*", "destination": "/api/cursor" },
+    { "source": "/api/jira/:path*", "destination": "/api/jira" },
+    { "source": "/api/bitbucket/:path*", "destination": "/api/bitbucket" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
-

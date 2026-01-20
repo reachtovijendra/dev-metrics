@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const CURSOR_API_BASE = 'https://api.cursor.com';
+// Bitbucket Data Center server URL
+const BITBUCKET_SERVER = process.env.BITBUCKET_SERVER_URL || 'https://acapgit.acacceptance.com';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Enable CORS
@@ -12,43 +13,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  const apiKey = process.env.CURSOR_API_KEY;
+  const token = process.env.BITBUCKET_TOKEN;
   
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Cursor API key not configured' });
+  if (!token) {
+    return res.status(500).json({ error: 'Bitbucket token not configured' });
   }
 
-  // Get the path after /api/cursor/
-  const pathSegments = req.query.path;
-  const path = Array.isArray(pathSegments) ? pathSegments.join('/') : pathSegments || '';
+  // Get the path from the URL - extract everything after /api/bitbucket
+  const url = new URL(req.url || '', `https://${req.headers.host}`);
+  const fullPath = url.pathname;
+  const path = fullPath.replace(/^\/api\/bitbucket\/?/, '');
+  
+  // Build query string from URL search params
+  const queryString = url.search;
   
   // Build the target URL
-  const targetUrl = `${CURSOR_API_BASE}/${path}`;
+  const targetUrl = `${BITBUCKET_SERVER}/rest/api/latest/${path}${queryString}`;
+  
+  console.log('Proxying to:', targetUrl);
   
   try {
-    // Prepare headers - Cursor uses Basic Auth with apiKey as username
-    const authHeader = 'Basic ' + Buffer.from(`${apiKey}:`).toString('base64');
-    
+    // Bitbucket Data Center uses Bearer token (HTTP Access Token)
     const headers: HeadersInit = {
-      'Authorization': authHeader,
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest'
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
     };
 
-    // Forward the request
     const fetchOptions: RequestInit = {
       method: req.method,
       headers
     };
 
-    // Include body for POST/PUT requests
     if (req.method === 'POST' || req.method === 'PUT') {
       fetchOptions.body = JSON.stringify(req.body);
     }
 
     const response = await fetch(targetUrl, fetchOptions);
     
-    // Get response data
     const contentType = response.headers.get('content-type');
     let data;
     
@@ -58,13 +59,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       data = await response.text();
     }
 
-    // Return the response
     return res.status(response.status).json(data);
     
   } catch (error) {
-    console.error('Cursor API proxy error:', error);
+    console.error('Bitbucket API proxy error:', error);
     return res.status(500).json({ 
-      error: 'Failed to proxy request to Cursor API',
+      error: 'Failed to proxy request to Bitbucket API',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }

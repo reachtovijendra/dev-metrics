@@ -19,24 +19,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'JIRA credentials not configured' });
   }
 
-  // Get the path after /api/jira/
-  const pathSegments = req.query.path;
-  const path = Array.isArray(pathSegments) ? pathSegments.join('/') : pathSegments || '';
+  // Get the path from the URL - extract everything after /api/jira
+  const url = new URL(req.url || '', `https://${req.headers.host}`);
+  const fullPath = url.pathname;
+  const path = fullPath.replace(/^\/api\/jira\/?/, '');
   
-  // Build query string from remaining query params (exclude 'path')
-  const queryParams = new URLSearchParams();
-  for (const [key, value] of Object.entries(req.query)) {
-    if (key !== 'path') {
-      if (Array.isArray(value)) {
-        value.forEach(v => queryParams.append(key, v));
-      } else if (value) {
-        queryParams.append(key, value);
-      }
-    }
-  }
+  // Build query string from URL search params
+  const queryString = url.search;
   
-  const queryString = queryParams.toString();
-  const targetUrl = `${JIRA_API_BASE}/${path}${queryString ? '?' + queryString : ''}`;
+  // Build the target URL
+  const targetUrl = `${JIRA_API_BASE}/${path}${queryString}`;
+  
+  console.log('Proxying to:', targetUrl);
   
   try {
     // JIRA Cloud uses Basic Auth with email:apiToken
