@@ -1001,8 +1001,9 @@ export class CursorComponent implements OnInit, OnDestroy {
             console.log('');
             
             console.log('--- PER DEVELOPER COMPARISON (showing differences > 100 lines) ---');
-            analyticsMetrics.forEach((analytics: any, idx) => {
-              const admin = adminMetrics[idx];
+            const adminLookup = new Map(adminMetrics.map(m => [m.email.toLowerCase(), m]));
+            analyticsMetrics.forEach((analytics: any) => {
+              const admin = adminLookup.get(analytics.email?.toLowerCase());
               const linesDiff = analytics.totalLinesGenerated - (admin?.totalLinesGenerated || 0);
               
               // Only log if there's a significant difference
@@ -1015,15 +1016,21 @@ export class CursorComponent implements OnInit, OnDestroy {
             });
             console.log('=== END COMPARISON ===');
             
-            // Merge Analytics API data (lines, tabs) with Admin API data (requests)
-            const metrics = analyticsMetrics.map((analytics, idx) => {
-              const admin = adminMetrics[idx];
+            // Create lookup map for Admin API data by email
+            const adminByEmail = new Map(
+              adminMetrics.map(m => [m.email.toLowerCase(), m])
+            );
+            
+            // Merge Analytics API data (lines, tabs) with Admin API data (requests, activeDays, lastUsedAt)
+            const metrics = analyticsMetrics.map((analytics) => {
+              const admin = adminByEmail.get(analytics.email.toLowerCase());
               return {
                 ...analytics,
                 // Use Analytics API for lines and tabs (matches CSV!)
-                // Use Admin API for requests
+                // Use Admin API for requests, active days, and last used date
                 totalRequests: admin?.totalRequests || 0,
-                activeDays: admin?.activeDays || 0
+                activeDays: admin?.activeDays || 0,
+                lastUsedAt: admin?.lastUsedAt
               };
             });
             // Map billing cycle spending by email
