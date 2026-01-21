@@ -231,8 +231,7 @@ export class CursorService {
         console.log('Total days in response:', andrewDays.length);
         andrewDays.forEach(d => {
           const dailyReqs = (d.composerRequests || 0) + (d.chatRequests || 0) + (d.agentRequests || 0);
-          const hasAct = dailyReqs > 0 || (d.acceptedLinesAdded || 0) > 0 || (d.totalTabsAccepted || 0) > 0;
-          console.log(`  Day: ${d.day}, Date: ${new Date(d.date).toISOString()}, Requests: ${dailyReqs}, Lines: ${d.acceptedLinesAdded}, Tabs: ${d.totalTabsAccepted}, HasActivity: ${hasAct}`);
+          console.log(`  Day: ${d.day}, isActive: ${d.isActive}, Requests: ${dailyReqs}, Lines: ${d.acceptedLinesAdded}, Tabs: ${d.totalTabsAccepted}, CmdK: ${d.cmdkUsages}, Applies: ${d.totalApplies}`);
         });
         console.log('=== END ANDREW DAYS ===');
 
@@ -247,11 +246,14 @@ export class CursorService {
           // - totalAccepts = Agent completions accepted
 
           // Check if there was actual activity on this day
-          // Activity = any requests made OR any lines generated/accepted OR any tabs
+          // Use the isActive flag from API, or check multiple activity types
           const dailyRequests = (d.composerRequests || 0) + (d.chatRequests || 0) + (d.agentRequests || 0);
-          const hadActivity = dailyRequests > 0 || 
+          const hadActivity = d.isActive || 
+                              dailyRequests > 0 || 
                               (d.acceptedLinesAdded || 0) > 0 || 
-                              (d.totalTabsAccepted || 0) > 0;
+                              (d.totalTabsAccepted || 0) > 0 ||
+                              (d.cmdkUsages || 0) > 0 ||
+                              (d.totalApplies || 0) > 0;
 
           if (existing) {
             existing.totalLinesGenerated += d.acceptedLinesAdded; // Use ACCEPTED lines, not total lines
