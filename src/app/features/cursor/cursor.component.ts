@@ -1225,25 +1225,47 @@ export class CursorComponent implements OnInit, OnDestroy {
 
   formatLastUsed(dateStr?: string): string {
     if (!dateStr) return '—';
-    // dateStr is in YYYY-MM-DD format, parse as UTC to avoid timezone issues
+    // dateStr is in YYYY-MM-DD format
     const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(Date.UTC(year, month - 1, day));
+    const activityDate = new Date(year, month - 1, day); // Local date
+    
+    // Get today's date (local, no time component)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // If the date is in the future, cap it at today
+    if (activityDate > today) {
+      activityDate.setTime(today.getTime());
+    }
+    
+    // Check if it's today or yesterday
+    const activityDateOnly = new Date(activityDate);
+    activityDateOnly.setHours(0, 0, 0, 0);
+    
+    if (activityDateOnly.getTime() === today.getTime()) {
+      return 'Today';
+    }
+    if (activityDateOnly.getTime() === yesterday.getTime()) {
+      return 'Yesterday';
+    }
+    
     // Check screen width to determine format
     const isWideScreen = window.innerWidth > 1400;
     if (isWideScreen) {
       // Show full date: "Jan 21, 2026"
-      return date.toLocaleDateString('en-US', { 
+      return activityDate.toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric', 
-        year: 'numeric',
-        timeZone: 'UTC'
+        year: 'numeric'
       });
     } else {
       // Show short date: "Jan 21"
-      return date.toLocaleDateString('en-US', { 
+      return activityDate.toLocaleDateString('en-US', { 
         month: 'short', 
-        day: 'numeric',
-        timeZone: 'UTC'
+        day: 'numeric'
       });
     }
   }
