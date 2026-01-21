@@ -1225,48 +1225,17 @@ export class CursorComponent implements OnInit, OnDestroy {
 
   formatLastUsed(dateStr?: string): string {
     if (!dateStr) return '—';
-    // dateStr is in YYYY-MM-DD format
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const activityDate = new Date(year, month - 1, day); // Local date
+    // dateStr is YYYY-MM-DD from API - just format it nicely, no calculations
+    const [year, month, day] = dateStr.split('-');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthName = months[parseInt(month, 10) - 1];
+    const dayNum = parseInt(day, 10);
     
-    // Get today's date (local, no time component)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    // If the date is in the future, cap it at today
-    if (activityDate > today) {
-      activityDate.setTime(today.getTime());
-    }
-    
-    // Check if it's today or yesterday
-    const activityDateOnly = new Date(activityDate);
-    activityDateOnly.setHours(0, 0, 0, 0);
-    
-    if (activityDateOnly.getTime() === today.getTime()) {
-      return 'Today';
-    }
-    if (activityDateOnly.getTime() === yesterday.getTime()) {
-      return 'Yesterday';
-    }
-    
-    // Check screen width to determine format
     const isWideScreen = window.innerWidth > 1400;
     if (isWideScreen) {
-      // Show full date: "Jan 21, 2026"
-      return activityDate.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric'
-      });
+      return `${monthName} ${dayNum}, ${year}`;
     } else {
-      // Show short date: "Jan 21"
-      return activityDate.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric'
-      });
+      return `${monthName} ${dayNum}`;
     }
   }
 
