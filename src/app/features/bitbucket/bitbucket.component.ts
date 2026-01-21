@@ -13,6 +13,7 @@ import { MetricCardComponent } from '../../shared/components/metric-card/metric-
 import { CredentialsService } from '../../core/services/credentials.service';
 import { BitbucketService, DeveloperBitbucketData, ConfiguredDeveloper } from '../../core/services/bitbucket.service';
 import { FilterService } from '../../core/services/filter.service';
+import { EnvironmentService } from '../../core/services/environment.service';
 import { PageHeaderService } from '../../core/services/page-header.service';
 import { DateRange } from '../../core/models/developer.model';
 
@@ -52,7 +53,7 @@ interface DeveloperBitbucketMetrics {
   ],
   template: `
     <div class="bitbucket-page">
-      @if (!credentialsService.hasBitbucketCredentials()) {
+      @if (!isConfigured()) {
         <div class="no-credentials">
           <i class="pi pi-lock"></i>
           <h3>Bitbucket Not Connected</h3>
@@ -412,6 +413,16 @@ export class BitbucketComponent implements OnInit, OnDestroy {
   credentialsService = inject(CredentialsService);
   private bitbucketService = inject(BitbucketService);
   private filterService = inject(FilterService);
+  private environmentService = inject(EnvironmentService);
+
+  /**
+   * Check if Bitbucket API is configured - either:
+   * - In production (Vercel serverless handles auth via env vars)
+   * - Or has local credentials configured in Settings
+   */
+  isConfigured(): boolean {
+    return this.environmentService.isProduction() || this.credentialsService.hasBitbucketCredentials();
+  }
   private pageHeaderService = inject(PageHeaderService);
   private injector = inject(Injector);
   private destroyRef = inject(DestroyRef);
@@ -515,13 +526,13 @@ export class BitbucketComponent implements OnInit, OnDestroy {
       next: (config) => {
         this.configuredDevelopers = config.developers;
         
-        if (this.credentialsService.hasBitbucketCredentials()) {
+        if (this.isConfigured()) {
           this.loadData();
         }
       },
       error: (err) => {
         console.error('Error loading developers config:', err);
-        if (this.credentialsService.hasBitbucketCredentials()) {
+        if (this.isConfigured()) {
           this.loadData();
         }
       }
