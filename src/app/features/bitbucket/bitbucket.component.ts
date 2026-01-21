@@ -58,7 +58,6 @@ interface DeveloperBitbucketMetrics {
           <i class="pi pi-lock"></i>
           <h3>Bitbucket Not Connected</h3>
           <p>Configure your Bitbucket Data Center credentials in Settings to view metrics.</p>
-          <p-button label="Go to Settings" icon="pi pi-cog" routerLink="/settings" />
         </div>
       } @else {
         <!-- KPI Summary -->

@@ -52,7 +52,6 @@ interface DeveloperJiraMetrics {
           <i class="pi pi-lock"></i>
           <h3>JIRA Not Connected</h3>
           <p>Configure your JIRA Cloud credentials in Settings to view ticket metrics.</p>
-          <p-button label="Go to Settings" icon="pi pi-cog" routerLink="/settings" />
         </div>
       } @else {
         <!-- KPI Summary -->

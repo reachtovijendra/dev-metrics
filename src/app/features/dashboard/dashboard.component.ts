@@ -50,9 +50,8 @@ interface TopDeveloper {
           <i class="pi pi-info-circle"></i>
           <div>
             <strong>No API connections configured</strong>
-            <p>Go to Settings to configure your Bitbucket, Cursor, and JIRA credentials.</p>
+            <p>Contact your administrator to configure API credentials.</p>
           </div>
-          <p-button label="Go to Settings" icon="pi pi-cog" routerLink="/settings" />
         </div>
       }
 

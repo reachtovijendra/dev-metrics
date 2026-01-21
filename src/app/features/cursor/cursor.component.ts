@@ -89,7 +89,6 @@ interface DeveloperCursorMetrics {
           <i class="pi pi-lock"></i>
           <h3>Cursor API Not Connected</h3>
           <p>Configure your Cursor Admin API key in Settings to view AI metrics.</p>
-          <p-button label="Go to Settings" icon="pi pi-cog" routerLink="/settings" />
         </div>
       } @else {
         <!-- KPI Summary -->
