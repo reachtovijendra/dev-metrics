@@ -22,6 +22,9 @@ import { forkJoin } from 'rxjs';
 interface DeveloperCursorMetrics {
   name: string;
   email: string;
+  totalLinesSuggested: number;
+  agentLinesSuggested: number;
+  tabLinesSuggested: number;
   totalLinesGenerated: number;
   acceptedLines: number;
   totalTabs: number;
@@ -91,10 +94,10 @@ interface DeveloperCursorMetrics {
         <!-- KPI Summary -->
         <div class="metrics-grid">
           <app-metric-card
-            label="AI Lines Generated"
-            [value]="totalMetrics().linesGenerated"
+            label="AI Lines Suggested"
+            [value]="totalMetrics().linesSuggested"
             icon="pi-code"
-            iconBg="#f59e0b"
+            iconBg="#3b82f6"
           />
           <app-metric-card
             label="Tab Completions"
@@ -138,7 +141,7 @@ interface DeveloperCursorMetrics {
             <ng-template pTemplate="header">
               <tr>
                 <th pSortableColumn="name">Developer <p-sortIcon field="name" /></th>
-                <th pSortableColumn="totalLinesGenerated">Lines Generated <p-sortIcon field="totalLinesGenerated" /></th>
+                <th pSortableColumn="totalLinesSuggested">Lines Suggested <p-sortIcon field="totalLinesSuggested" /></th>
                 <th pSortableColumn="tabsAccepted">Tab Completions <p-sortIcon field="tabsAccepted" /></th>
                 <th pSortableColumn="requests">AI Requests <p-sortIcon field="requests" /></th>
                 <th pSortableColumn="activeDays">Active Days <p-sortIcon field="activeDays" /></th>
@@ -167,7 +170,12 @@ interface DeveloperCursorMetrics {
                   </div>
                 </td>
                 <td>
-                  <span class="metric-value" [class.excluded]="dev.excluded">{{ dev.totalLinesGenerated | number }}</span>
+                  <span 
+                    class="metric-value" 
+                    [class.excluded]="dev.excluded"
+                    [pTooltip]="getLinesSuggestedTooltip(dev)"
+                    tooltipPosition="top"
+                  >{{ dev.totalLinesSuggested | number }}</span>
                 </td>
                 <td><span class="metric-value" [class.excluded]="dev.excluded">{{ dev.tabsAccepted | number }}</span></td>
                 <td><span class="metric-value" [class.excluded]="dev.excluded">{{ dev.requests | number }}</span></td>
@@ -662,6 +670,7 @@ export class CursorComponent implements OnInit, OnDestroy {
   private billingCycleEndDate: Date | null = null;
 
   totalMetrics = signal({
+    linesSuggested: 0,
     linesGenerated: 0,
     avgActiveDays: 0,
     tabCompletions: 0,
@@ -835,6 +844,9 @@ export class CursorComponent implements OnInit, OnDestroy {
     this.allDevelopers = this.configuredDevelopers.map(dev => ({
       name: dev.name,
       email: dev.email,
+      totalLinesSuggested: 0,
+      agentLinesSuggested: 0,
+      tabLinesSuggested: 0,
       totalLinesGenerated: 0,
       acceptedLines: 0,
       totalTabs: 0,
@@ -888,6 +900,7 @@ export class CursorComponent implements OnInit, OnDestroy {
     // Clear current data while loading to show user that data is being refreshed
     this.developers = [];
     this.totalMetrics.set({
+      linesSuggested: 0,
       linesGenerated: 0,
       avgActiveDays: 0,
       tabCompletions: 0,
@@ -975,26 +988,84 @@ export class CursorComponent implements OnInit, OnDestroy {
             console.log('=== ANALYTICS vs ADMIN API COMPARISON ===');
             console.log('Date Range:', this.formatDate(dateRange.startDate), 'to', this.formatDate(dateRange.endDate));
             
-            // Calculate totals from each API
+            // Calculate totals from each API - separating agent lines from tab lines
+            // Analytics: totalLinesGenerated = agent + tab lines combined
+            // We need to calculate tab lines separately
+            const analyticsAgentLines = analyticsMetrics.reduce((sum, m: any) => sum + (m.agentLinesAccepted || 0), 0);
+            const analyticsTabLines = analyticsMetrics.reduce((sum, m: any) => sum + (m.tabLinesAccepted || 0), 0);
             const analyticsTotal = analyticsMetrics.reduce((sum, m) => sum + m.totalLinesGenerated, 0);
+            const analyticsTabsCount = analyticsMetrics.reduce((sum, m) => sum + m.totalTabsAccepted, 0);
+            
             const adminTotal = adminMetrics.reduce((sum, m) => sum + m.totalLinesGenerated, 0);
-            const analyticsTabsTotal = analyticsMetrics.reduce((sum, m) => sum + m.totalTabsAccepted, 0);
-            const adminTabsTotal = adminMetrics.reduce((sum, m) => sum + m.totalTabsAccepted, 0);
+            const adminTabsCount = adminMetrics.reduce((sum, m) => sum + m.totalTabsAccepted, 0);
             
             console.log('--- TOTALS ---');
-            console.log('Analytics API - Lines:', analyticsTotal, '| Tabs:', analyticsTabsTotal);
-            console.log('Admin API     - Lines:', adminTotal, '| Tabs:', adminTabsTotal);
-            console.log('Difference    - Lines:', analyticsTotal - adminTotal, '| Tabs:', analyticsTabsTotal - adminTabsTotal);
+            console.log('Analytics API:');
+            console.log('  - Total Lines (agent+tab):', analyticsTotal);
+            console.log('  - Agent Lines only:', analyticsAgentLines);
+            console.log('  - Tab Lines only:', analyticsTabLines);
+            console.log('  - Tab Completions (count):', analyticsTabsCount);
+            console.log('Admin API:');
+            console.log('  - Total Lines:', adminTotal);
+            console.log('  - Tab Completions (count):', adminTabsCount);
+            console.log('DIFFERENCE:');
+            console.log('  - Total Lines:', analyticsTotal - adminTotal);
+            console.log('  - Tab Completions:', analyticsTabsCount - adminTabsCount);
             
-            console.log('--- PER DEVELOPER COMPARISON (showing differences) ---');
-            analyticsMetrics.forEach((analytics, idx) => {
+            // === DEBUG SPECIFIC USER: Andrew Eubanks ===
+            console.log('');
+            console.log('=== DEBUG: ANDREW EUBANKS ===');
+            const debugEmail = 'andrew.eubanks@acacceptance.com';
+            const andrewAnalytics = analyticsMetrics.find((m: any) => m.email?.toLowerCase() === debugEmail);
+            const andrewAdmin = adminMetrics.find((m: any) => m.email?.toLowerCase() === debugEmail);
+            
+            if (andrewAnalytics) {
+              console.log('ANALYTICS API Data:');
+              console.log('  - Email:', andrewAnalytics.email);
+              console.log('  - Name:', andrewAnalytics.name);
+              console.log('  - Total Lines Generated:', andrewAnalytics.totalLinesGenerated);
+              console.log('  - Agent Lines Accepted:', (andrewAnalytics as any).agentLinesAccepted || 'N/A');
+              console.log('  - Tab Lines Accepted:', (andrewAnalytics as any).tabLinesAccepted || 'N/A');
+              console.log('  - Tab Completions (count):', andrewAnalytics.totalTabsAccepted);
+              console.log('  - Tabs Shown:', andrewAnalytics.totalTabsShown);
+              console.log('  - Tab Acceptance Rate:', andrewAnalytics.tabAcceptanceRate + '%');
+              console.log('  - Full object:', andrewAnalytics);
+            } else {
+              console.log('ANALYTICS API: Andrew Eubanks NOT FOUND');
+            }
+            
+            if (andrewAdmin) {
+              console.log('ADMIN API Data:');
+              console.log('  - Email:', andrewAdmin.email);
+              console.log('  - Name:', andrewAdmin.name);
+              console.log('  - Total Lines Generated (acceptedLinesAdded):', andrewAdmin.totalLinesGenerated);
+              console.log('  - Tab Completions (totalTabsAccepted):', andrewAdmin.totalTabsAccepted);
+              console.log('  - Active Days:', andrewAdmin.activeDays);
+              console.log('  - Total Requests:', andrewAdmin.totalRequests);
+              console.log('  - Full object:', andrewAdmin);
+            } else {
+              console.log('ADMIN API: Andrew Eubanks NOT FOUND');
+            }
+            
+            if (andrewAnalytics && andrewAdmin) {
+              console.log('DIFFERENCE:');
+              console.log('  - Lines: Analytics(' + andrewAnalytics.totalLinesGenerated + ') - Admin(' + andrewAdmin.totalLinesGenerated + ') = ' + (andrewAnalytics.totalLinesGenerated - andrewAdmin.totalLinesGenerated));
+              console.log('  - Tabs:  Analytics(' + andrewAnalytics.totalTabsAccepted + ') - Admin(' + andrewAdmin.totalTabsAccepted + ') = ' + (andrewAnalytics.totalTabsAccepted - andrewAdmin.totalTabsAccepted));
+            }
+            console.log('=== END DEBUG: ANDREW EUBANKS ===');
+            console.log('');
+            
+            console.log('--- PER DEVELOPER COMPARISON (showing differences > 100 lines) ---');
+            analyticsMetrics.forEach((analytics: any, idx) => {
               const admin = adminMetrics[idx];
               const linesDiff = analytics.totalLinesGenerated - (admin?.totalLinesGenerated || 0);
-              const tabsDiff = analytics.totalTabsAccepted - (admin?.totalTabsAccepted || 0);
               
-              // Only log if there's a difference
-              if (Math.abs(linesDiff) > 10 || Math.abs(tabsDiff) > 5) {
-                console.log(`${analytics.name}: Analytics(Lines=${analytics.totalLinesGenerated}, Tabs=${analytics.totalTabsAccepted}) vs Admin(Lines=${admin?.totalLinesGenerated || 0}, Tabs=${admin?.totalTabsAccepted || 0}) | Diff: Lines=${linesDiff}, Tabs=${tabsDiff}`);
+              // Only log if there's a significant difference
+              if (Math.abs(linesDiff) > 100) {
+                console.log(`${analytics.name}:`);
+                console.log(`  Analytics: Total=${analytics.totalLinesGenerated}, AgentLines=${analytics.agentLinesAccepted || 'N/A'}, TabLines=${analytics.tabLinesAccepted || 'N/A'}, TabCount=${analytics.totalTabsAccepted}`);
+                console.log(`  Admin:     Total=${admin?.totalLinesGenerated || 0}, TabCount=${admin?.totalTabsAccepted || 0}`);
+                console.log(`  Diff:      ${linesDiff} lines`);
               }
             });
             console.log('=== END COMPARISON ===');
@@ -1050,6 +1121,9 @@ export class CursorComponent implements OnInit, OnDestroy {
               return {
                 name: m.name,
                 email: m.email,
+                totalLinesSuggested: (m as any).totalLinesSuggested || 0,
+                agentLinesSuggested: (m as any).agentLinesSuggested || 0,
+                tabLinesSuggested: (m as any).tabLinesSuggested || 0,
                 totalLinesGenerated: m.totalLinesGenerated,
                 acceptedLines: m.acceptedLinesAdded,
                 totalTabs: m.totalTabsShown,
@@ -1089,6 +1163,7 @@ export class CursorComponent implements OnInit, OnDestroy {
               : 0;
 
             // Calculate totals from configured developers only (not entire team)
+            const teamLinesSuggested = this.developers.reduce((sum, dev) => sum + dev.totalLinesSuggested, 0);
             const teamLinesGenerated = this.developers.reduce((sum, dev) => sum + dev.totalLinesGenerated, 0);
             const teamTabCompletions = this.developers.reduce((sum, dev) => sum + dev.tabsAccepted, 0);
             const teamRequests = this.developers.reduce((sum, dev) => sum + dev.requests, 0);
@@ -1096,16 +1171,18 @@ export class CursorComponent implements OnInit, OnDestroy {
             console.log('=== CONFIGURED DEVELOPERS TOTALS ===');
             console.log('Configured developers count:', this.configuredDevelopers.length);
             console.log('Developers with data:', this.developers.length);
-            console.log('Total Lines Generated (configured devs):', teamLinesGenerated);
+            console.log('Total Lines Suggested (configured devs):', teamLinesSuggested);
+            console.log('Total Lines Accepted (configured devs):', teamLinesGenerated);
             console.log('Total Tab Completions (configured devs):', teamTabCompletions);
             console.log('--- Per Developer Breakdown ---');
             this.developers.forEach(dev => {
               if (dev.totalLinesGenerated > 0 || dev.tabsAccepted > 0) {
-                console.log(`${dev.name}: Lines=${dev.totalLinesGenerated}, Tabs=${dev.tabsAccepted}`);
+                console.log(`${dev.name}: Suggested=${dev.totalLinesSuggested}, Accepted=${dev.totalLinesGenerated}, Tabs=${dev.tabsAccepted}`);
               }
             });
 
             this.totalMetrics.set({
+              linesSuggested: teamLinesSuggested,
               linesGenerated: teamLinesGenerated,
               avgActiveDays: avgActiveDays,
               tabCompletions: teamTabCompletions,
@@ -1186,6 +1263,12 @@ export class CursorComponent implements OnInit, OnDestroy {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   }
 
+  getLinesSuggestedTooltip(dev: DeveloperCursorMetrics): string {
+    const agentLines = dev.agentLinesSuggested.toLocaleString();
+    const tabLines = dev.tabLinesSuggested.toLocaleString();
+    return `Agent: ${agentLines}\nTab: ${tabLines}`;
+  }
+
   private formatDate(date: Date): string {
     return date.toISOString().split('T')[0];
   }
@@ -1200,6 +1283,7 @@ export class CursorComponent implements OnInit, OnDestroy {
     // Filter to only include non-excluded developers
     const includedDevs = this.developers.filter(d => !d.excluded);
     
+    const teamLinesSuggested = includedDevs.reduce((sum, dev) => sum + dev.totalLinesSuggested, 0);
     const teamLinesGenerated = includedDevs.reduce((sum, dev) => sum + dev.totalLinesGenerated, 0);
     const teamTabCompletions = includedDevs.reduce((sum, dev) => sum + dev.tabsAccepted, 0);
     const dateRangeTeamSpending = includedDevs.reduce((sum, dev) => sum + dev.spending, 0);
@@ -1210,6 +1294,7 @@ export class CursorComponent implements OnInit, OnDestroy {
 
     this.totalMetrics.set({
       ...this.totalMetrics(),
+      linesSuggested: teamLinesSuggested,
       linesGenerated: teamLinesGenerated,
       tabCompletions: teamTabCompletions,
       avgActiveDays: avgActiveDays,
