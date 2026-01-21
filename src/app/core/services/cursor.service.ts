@@ -723,6 +723,8 @@ export class CursorService {
             name: dev.name,
             totalLinesGenerated: totalLinesAccepted, // All AI-generated lines (agent + tab) = "AI Lines Total" in CSV
             acceptedLinesAdded: totalLinesAccepted, // Same value (these are all accepted lines)
+            agentLinesAccepted: agentLinesAccepted, // Track separately for debugging
+            tabLinesAccepted: tabLinesAccepted, // Track separately for debugging
             totalTabsShown: tab?.total_lines_suggested || 0,
             totalTabsAccepted: tabCompletions, // This is "Tab Completions" in CSV
             tabAcceptanceRate: tab?.accept_ratio ? Math.round(tab.accept_ratio * 100) : 0,

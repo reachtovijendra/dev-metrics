@@ -975,26 +975,41 @@ export class CursorComponent implements OnInit, OnDestroy {
             console.log('=== ANALYTICS vs ADMIN API COMPARISON ===');
             console.log('Date Range:', this.formatDate(dateRange.startDate), 'to', this.formatDate(dateRange.endDate));
             
-            // Calculate totals from each API
+            // Calculate totals from each API - separating agent lines from tab lines
+            // Analytics: totalLinesGenerated = agent + tab lines combined
+            // We need to calculate tab lines separately
+            const analyticsAgentLines = analyticsMetrics.reduce((sum, m: any) => sum + (m.agentLinesAccepted || 0), 0);
+            const analyticsTabLines = analyticsMetrics.reduce((sum, m: any) => sum + (m.tabLinesAccepted || 0), 0);
             const analyticsTotal = analyticsMetrics.reduce((sum, m) => sum + m.totalLinesGenerated, 0);
+            const analyticsTabsCount = analyticsMetrics.reduce((sum, m) => sum + m.totalTabsAccepted, 0);
+            
             const adminTotal = adminMetrics.reduce((sum, m) => sum + m.totalLinesGenerated, 0);
-            const analyticsTabsTotal = analyticsMetrics.reduce((sum, m) => sum + m.totalTabsAccepted, 0);
-            const adminTabsTotal = adminMetrics.reduce((sum, m) => sum + m.totalTabsAccepted, 0);
+            const adminTabsCount = adminMetrics.reduce((sum, m) => sum + m.totalTabsAccepted, 0);
             
             console.log('--- TOTALS ---');
-            console.log('Analytics API - Lines:', analyticsTotal, '| Tabs:', analyticsTabsTotal);
-            console.log('Admin API     - Lines:', adminTotal, '| Tabs:', adminTabsTotal);
-            console.log('Difference    - Lines:', analyticsTotal - adminTotal, '| Tabs:', analyticsTabsTotal - adminTabsTotal);
+            console.log('Analytics API:');
+            console.log('  - Total Lines (agent+tab):', analyticsTotal);
+            console.log('  - Agent Lines only:', analyticsAgentLines);
+            console.log('  - Tab Lines only:', analyticsTabLines);
+            console.log('  - Tab Completions (count):', analyticsTabsCount);
+            console.log('Admin API:');
+            console.log('  - Total Lines:', adminTotal);
+            console.log('  - Tab Completions (count):', adminTabsCount);
+            console.log('DIFFERENCE:');
+            console.log('  - Total Lines:', analyticsTotal - adminTotal);
+            console.log('  - Tab Completions:', analyticsTabsCount - adminTabsCount);
             
-            console.log('--- PER DEVELOPER COMPARISON (showing differences) ---');
-            analyticsMetrics.forEach((analytics, idx) => {
+            console.log('--- PER DEVELOPER COMPARISON (showing differences > 100 lines) ---');
+            analyticsMetrics.forEach((analytics: any, idx) => {
               const admin = adminMetrics[idx];
               const linesDiff = analytics.totalLinesGenerated - (admin?.totalLinesGenerated || 0);
-              const tabsDiff = analytics.totalTabsAccepted - (admin?.totalTabsAccepted || 0);
               
-              // Only log if there's a difference
-              if (Math.abs(linesDiff) > 10 || Math.abs(tabsDiff) > 5) {
-                console.log(`${analytics.name}: Analytics(Lines=${analytics.totalLinesGenerated}, Tabs=${analytics.totalTabsAccepted}) vs Admin(Lines=${admin?.totalLinesGenerated || 0}, Tabs=${admin?.totalTabsAccepted || 0}) | Diff: Lines=${linesDiff}, Tabs=${tabsDiff}`);
+              // Only log if there's a significant difference
+              if (Math.abs(linesDiff) > 100) {
+                console.log(`${analytics.name}:`);
+                console.log(`  Analytics: Total=${analytics.totalLinesGenerated}, AgentLines=${analytics.agentLinesAccepted || 'N/A'}, TabLines=${analytics.tabLinesAccepted || 'N/A'}, TabCount=${analytics.totalTabsAccepted}`);
+                console.log(`  Admin:     Total=${admin?.totalLinesGenerated || 0}, TabCount=${admin?.totalTabsAccepted || 0}`);
+                console.log(`  Diff:      ${linesDiff} lines`);
               }
             });
             console.log('=== END COMPARISON ===');
