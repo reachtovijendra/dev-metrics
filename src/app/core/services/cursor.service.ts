@@ -520,9 +520,23 @@ export class CursorService {
         console.log('=== ANALYTICS API LEADERBOARD RESPONSE ===');
         console.log('Raw response:', response);
         console.log('Total users:', response.pagination?.totalUsers || 'unknown');
-        // Log sample data
+        
         const tabData = response.data?.tab_leaderboard?.data || [];
         const agentData = response.data?.agent_leaderboard?.data || [];
+        
+        // Calculate totals for debugging
+        const totalTabLines = tabData.reduce((sum: number, t: any) => sum + (t.total_lines_accepted || 0), 0);
+        const totalAgentLines = agentData.reduce((sum: number, a: any) => sum + (a.total_lines_accepted || 0), 0);
+        const totalTabCompletions = tabData.reduce((sum: number, t: any) => sum + (t.total_accepts || 0), 0);
+        
+        console.log('=== ANALYTICS API TOTALS ===');
+        console.log('Tab users:', tabData.length);
+        console.log('Agent users:', agentData.length);
+        console.log('Total TAB lines accepted:', totalTabLines);
+        console.log('Total AGENT lines accepted:', totalAgentLines);
+        console.log('Combined total (tab + agent):', totalTabLines + totalAgentLines);
+        console.log('Total Tab Completions:', totalTabCompletions);
+        
         if (tabData.length > 0) {
           console.log('Tab leaderboard sample:', tabData[0]);
         }

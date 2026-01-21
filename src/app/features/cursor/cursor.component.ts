@@ -1065,6 +1065,18 @@ export class CursorComponent implements OnInit, OnDestroy {
             const teamTabCompletions = this.developers.reduce((sum, dev) => sum + dev.tabsAccepted, 0);
             const teamRequests = this.developers.reduce((sum, dev) => sum + dev.requests, 0);
 
+            console.log('=== CONFIGURED DEVELOPERS TOTALS ===');
+            console.log('Configured developers count:', this.configuredDevelopers.length);
+            console.log('Developers with data:', this.developers.length);
+            console.log('Total Lines Generated (configured devs):', teamLinesGenerated);
+            console.log('Total Tab Completions (configured devs):', teamTabCompletions);
+            console.log('--- Per Developer Breakdown ---');
+            this.developers.forEach(dev => {
+              if (dev.totalLinesGenerated > 0 || dev.tabsAccepted > 0) {
+                console.log(`${dev.name}: Lines=${dev.totalLinesGenerated}, Tabs=${dev.tabsAccepted}`);
+              }
+            });
+
             this.totalMetrics.set({
               linesGenerated: teamLinesGenerated,
               avgActiveDays: avgActiveDays,
