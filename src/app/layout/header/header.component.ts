@@ -215,27 +215,74 @@ import { PageHeaderService } from '../../core/services/page-header.service';
       }
     }
 
-    /* Medium screens - hide filters */
+    /* Medium screens - compact filters */
     @media (max-width: 1200px) {
-      .header-filters {
-        display: none;
+      :host ::ng-deep .header-filters .p-multiselect {
+        min-width: 6rem !important;
       }
     }
 
-    /* Small screens - hide date filter too */
+    /* Small screens - stack header elements */
     @media (max-width: 900px) {
-      .date-filter {
-        display: none;
+      .header-left {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      
+      .header-filters {
+        flex-wrap: wrap;
+      }
+      
+      :host ::ng-deep .header-filters .p-multiselect {
+        min-width: 5rem !important;
+        font-size: 0.75rem;
       }
     }
 
-    /* Very small screens */
+    /* Very small screens (phones) */
     @media (max-width: 768px) {
       .header {
-        padding: 0 1rem;
+        padding: 0.5rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+      }
+      
+      .header-left {
+        width: 100%;
+      }
+      
+      .header-filters {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      
+      :host ::ng-deep .header-filters .p-multiselect {
+        min-width: 4.5rem !important;
+        font-size: 0.7rem;
+      }
+      
+      .header-right {
+        width: 100%;
+        justify-content: space-between;
+      }
+      
+      .date-filter {
+        flex: 1;
+      }
+      
+      :host ::ng-deep .date-filter .p-calendar input {
+        width: 100% !important;
+        min-width: unset !important;
+        font-size: 0.75rem;
       }
       
       .page-title {
+        font-size: 1rem;
+      }
+      
+      .page-icon {
         font-size: 1rem;
       }
     }
