@@ -14,8 +14,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const apiKey = process.env.CURSOR_API_KEY;
   
+  console.log('CURSOR_API_KEY exists:', !!apiKey);
+  console.log('Request URL:', req.url);
+  console.log('Request method:', req.method);
+  
   if (!apiKey) {
-    return res.status(500).json({ error: 'Cursor API key not configured' });
+    return res.status(401).json({ error: 'Cursor API key not configured' });
   }
 
   // Get the path from the URL - extract everything after /api/cursor
@@ -54,6 +58,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const response = await fetch(targetUrl, fetchOptions);
     
+    console.log('Cursor API response status:', response.status);
+    
     // Get response data
     const contentType = response.headers.get('content-type');
     let data;
@@ -64,14 +70,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       data = await response.text();
     }
 
+    console.log('Cursor API response type:', typeof data);
+
     // Return the response
     return res.status(response.status).json(data);
     
   } catch (error) {
     console.error('Cursor API proxy error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : '';
+    console.error('Error stack:', errorStack);
     return res.status(500).json({ 
       error: 'Failed to proxy request to Cursor API',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: errorMessage,
+      targetUrl: targetUrl
     });
   }
 }
