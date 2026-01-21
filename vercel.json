@@ -12,5 +12,8 @@
     { "source": "/api/jira/:path*", "destination": "/api/jira" },
     { "source": "/api/bitbucket/:path*", "destination": "/api/bitbucket" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ]
+  ],
+  "env": {
+    "NODE_VERSION": "18"
+  }
 }
