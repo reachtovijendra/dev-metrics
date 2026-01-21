@@ -167,6 +167,30 @@ export class CursorService {
                       'acceptedLinesAdded:', sample.acceptedLinesAdded,
                       'totalTabsAccepted:', sample.totalTabsAccepted);
         }
+        
+        // === DEBUG: ANDREW EUBANKS RAW DAILY USAGE DATA ===
+        const andrewEmail = 'andrew.eubanks@acacceptance.com';
+        const andrewRecords = response.data?.filter((r: any) => r.email?.toLowerCase() === andrewEmail) || [];
+        console.log('');
+        console.log('=== RAW ADMIN API: ANDREW EUBANKS (ALL FIELDS) ===');
+        console.log('Total daily records for Andrew:', andrewRecords.length);
+        if (andrewRecords.length > 0) {
+          console.log('ALL KEYS in daily record:', Object.keys(andrewRecords[0]));
+          console.log('First record (ALL FIELDS):', JSON.stringify(andrewRecords[0], null, 2));
+          
+          // Sum ALL numeric fields
+          const sums: any = {};
+          andrewRecords.forEach((r: any) => {
+            Object.keys(r).forEach(key => {
+              if (typeof r[key] === 'number') {
+                sums[key] = (sums[key] || 0) + r[key];
+              }
+            });
+          });
+          console.log('SUMS of all numeric fields:', sums);
+        }
+        console.log('=== END RAW ADMIN API: ANDREW EUBANKS ===');
+        console.log('');
       }),
       catchError(err => {
         console.error('Error fetching daily usage:', err);
@@ -543,6 +567,24 @@ export class CursorService {
         if (agentData.length > 0) {
           console.log('Agent leaderboard sample:', agentData[0]);
         }
+        
+        // === DEBUG: ANDREW EUBANKS RAW API DATA ===
+        const andrewEmail = 'andrew.eubanks@acacceptance.com';
+        const andrewTab = tabData.find((t: any) => t.email?.toLowerCase() === andrewEmail);
+        const andrewAgent = agentData.find((a: any) => a.email?.toLowerCase() === andrewEmail);
+        
+        console.log('');
+        console.log('=== RAW API: ANDREW EUBANKS (ALL FIELDS) ===');
+        console.log('Tab leaderboard entry (ALL FIELDS):', JSON.stringify(andrewTab, null, 2));
+        console.log('Agent leaderboard entry (ALL FIELDS):', JSON.stringify(andrewAgent, null, 2));
+        if (andrewTab) {
+          console.log('TAB - All keys:', Object.keys(andrewTab));
+        }
+        if (andrewAgent) {
+          console.log('AGENT - All keys:', Object.keys(andrewAgent));
+        }
+        console.log('=== END RAW API: ANDREW EUBANKS ===');
+        console.log('');
       }),
       catchError(err => {
         console.error('Error fetching analytics leaderboard:', err);
@@ -717,12 +759,22 @@ export class CursorService {
           // Get favorite model from our calculated map (since API doesn't return it)
           const favoriteModel = favoriteModels.get(emailLower) || '—';
 
+          // Lines Suggested = Composer Total Lines Suggested + Tabs Total Lines Suggested
+          const agentLinesSuggested = agent?.total_lines_suggested || 0;
+          const tabLinesSuggested = tab?.total_lines_suggested || 0;
+          const totalLinesSuggested = agentLinesSuggested + tabLinesSuggested;
+
           return {
             userId: agent?.user_id || tab?.user_id || '',
             email: dev.email,
             name: dev.name,
             totalLinesGenerated: totalLinesAccepted, // All AI-generated lines (agent + tab) = "AI Lines Total" in CSV
             acceptedLinesAdded: totalLinesAccepted, // Same value (these are all accepted lines)
+            agentLinesAccepted: agentLinesAccepted, // Track separately for debugging
+            tabLinesAccepted: tabLinesAccepted, // Track separately for debugging
+            totalLinesSuggested: totalLinesSuggested, // Total lines suggested by AI
+            agentLinesSuggested: agentLinesSuggested, // Agent/Composer lines suggested
+            tabLinesSuggested: tabLinesSuggested, // Tab lines suggested
             totalTabsShown: tab?.total_lines_suggested || 0,
             totalTabsAccepted: tabCompletions, // This is "Tab Completions" in CSV
             tabAcceptanceRate: tab?.accept_ratio ? Math.round(tab.accept_ratio * 100) : 0,
