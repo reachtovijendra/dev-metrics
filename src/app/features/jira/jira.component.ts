@@ -12,6 +12,7 @@ import { MetricCardComponent } from '../../shared/components/metric-card/metric-
 import { CredentialsService } from '../../core/services/credentials.service';
 import { JiraService } from '../../core/services/jira.service';
 import { BitbucketService, ConfiguredDeveloper } from '../../core/services/bitbucket.service';
+import { EnvironmentService } from '../../core/services/environment.service';
 import { FilterService } from '../../core/services/filter.service';
 import { PageHeaderService } from '../../core/services/page-header.service';
 
@@ -46,7 +47,7 @@ interface DeveloperJiraMetrics {
   ],
   template: `
     <div class="jira-page">
-      @if (!credentialsService.hasJiraCredentials()) {
+      @if (!isConfigured()) {
         <div class="no-credentials">
           <i class="pi pi-lock"></i>
           <h3>JIRA Not Connected</h3>
@@ -435,6 +436,16 @@ export class JiraComponent implements OnInit, OnDestroy {
   credentialsService = inject(CredentialsService);
   private jiraService = inject(JiraService);
   private bitbucketService = inject(BitbucketService);
+  private environmentService = inject(EnvironmentService);
+
+  /**
+   * Check if JIRA API is configured - either:
+   * - In production (Vercel serverless handles auth via env vars)
+   * - Or has local credentials configured in Settings
+   */
+  isConfigured(): boolean {
+    return this.environmentService.isProduction() || this.credentialsService.hasJiraCredentials();
+  }
   private filterService = inject(FilterService);
   private pageHeaderService = inject(PageHeaderService);
   private injector = inject(Injector);

@@ -16,6 +16,7 @@ import { CredentialsService } from '../../core/services/credentials.service';
 import { CursorService } from '../../core/services/cursor.service';
 import { BitbucketService } from '../../core/services/bitbucket.service';
 import { FilterService } from '../../core/services/filter.service';
+import { EnvironmentService } from '../../core/services/environment.service';
 import { PageHeaderService } from '../../core/services/page-header.service';
 import { forkJoin } from 'rxjs';
 
@@ -83,7 +84,7 @@ interface DeveloperCursorMetrics {
         </div>
       </div>
 
-      @if (!credentialsService.hasCursorCredentials()) {
+      @if (!isConfigured()) {
         <div class="no-credentials">
           <i class="pi pi-lock"></i>
           <h3>Cursor API Not Connected</h3>
@@ -648,6 +649,16 @@ export class CursorComponent implements OnInit, OnDestroy {
   private cursorService = inject(CursorService);
   private bitbucketService = inject(BitbucketService);
   private filterService = inject(FilterService);
+  private environmentService = inject(EnvironmentService);
+
+  /**
+   * Check if Cursor API is configured - either:
+   * - In production (Vercel serverless handles auth via env vars)
+   * - Or has local credentials configured in Settings
+   */
+  isConfigured(): boolean {
+    return this.environmentService.isProduction() || this.credentialsService.hasCursorCredentials();
+  }
   private pageHeaderService = inject(PageHeaderService);
   private injector = inject(Injector);
 
@@ -826,10 +837,10 @@ export class CursorComponent implements OnInit, OnDestroy {
         this.configuredDevelopers = config.developers;
         
         // Now load Cursor data
-        if (this.credentialsService.hasCursorCredentials()) {
+        if (this.isConfigured()) {
           this.loadData(false);
         } else {
-          // Initialize with empty data if no credentials
+          // Initialize with empty data if no credentials (dev mode only)
           this.initializeEmptyData();
         }
       },
@@ -890,7 +901,7 @@ export class CursorComponent implements OnInit, OnDestroy {
   }
 
   loadData(forceRefresh = false): void {
-    if (!this.credentialsService.hasCursorCredentials()) {
+    if (!this.isConfigured()) {
       return;
     }
 
