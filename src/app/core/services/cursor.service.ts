@@ -224,6 +224,18 @@ export class CursorService {
       map(response => {
         const userMetricsMap = new Map<string, CursorAggregatedMetrics>();
 
+        // Debug: Log all days for Andrew Eubanks
+        const andrewEmail = 'andrew.eubanks@acacceptance.com';
+        const andrewDays = response.data.filter(d => d.email?.toLowerCase() === andrewEmail.toLowerCase());
+        console.log('=== ANDREW EUBANKS - ALL DAILY DATA ===');
+        console.log('Total days in response:', andrewDays.length);
+        andrewDays.forEach(d => {
+          const dailyReqs = (d.composerRequests || 0) + (d.chatRequests || 0) + (d.agentRequests || 0);
+          const hasAct = dailyReqs > 0 || (d.acceptedLinesAdded || 0) > 0 || (d.totalTabsAccepted || 0) > 0;
+          console.log(`  Day: ${d.day}, Date: ${new Date(d.date).toISOString()}, Requests: ${dailyReqs}, Lines: ${d.acceptedLinesAdded}, Tabs: ${d.totalTabsAccepted}, HasActivity: ${hasAct}`);
+        });
+        console.log('=== END ANDREW DAYS ===');
+
         for (const dailyUsage of response.data) {
           const existing = userMetricsMap.get(dailyUsage.userId);
           // Metrics are at top level, not nested under 'metrics'
