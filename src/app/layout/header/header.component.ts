@@ -77,6 +77,9 @@ import { PageHeaderService } from '../../core/services/page-header.service';
               (click)="filterService.clearFilters()"
             ></button>
           }
+          @if (pageHeaderService.loading()) {
+            <i class="pi pi-spin pi-spinner loading-spinner"></i>
+          }
         </div>
       </div>
 
@@ -94,9 +97,8 @@ import { PageHeaderService } from '../../core/services/page-header.service';
             />
             <button 
               pButton
-              icon="pi pi-refresh"
+              [icon]="pageHeaderService.loading() ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'"
               class="p-button-text p-button-rounded"
-              [class.p-button-loading]="pageHeaderService.loading()"
               pTooltip="Refresh Data"
               tooltipPosition="bottom"
               (click)="pageHeaderService.triggerRefresh()"
@@ -159,6 +161,12 @@ import { PageHeaderService } from '../../core/services/page-header.service';
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      
+      .loading-spinner {
+        font-size: 1.1rem;
+        color: var(--primary-color);
+        margin-left: 0.5rem;
+      }
     }
 
     .header-right {
