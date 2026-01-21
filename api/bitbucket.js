@@ -17,13 +17,20 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Bitbucket token not configured' });
   }
 
-  // Get the path from the URL - extract everything after /api/bitbucket
+  // Get the path from Vercel's rewrite (passed as query param) or from URL
   const url = new URL(req.url || '', `https://${req.headers.host}`);
-  const fullPath = url.pathname;
-  const path = fullPath.replace(/^\/api\/bitbucket\/?/, '');
   
-  // Build query string from URL search params
-  const queryString = url.search;
+  // Vercel passes the captured path as a query parameter
+  let path = req.query.path;
+  if (Array.isArray(path)) {
+    path = path.join('/');
+  }
+  path = path || '';
+  
+  // Build query string, excluding the 'path' param added by Vercel rewrite
+  const searchParams = new URLSearchParams(url.search);
+  searchParams.delete('path');
+  const queryString = searchParams.toString() ? `?${searchParams.toString()}` : '';
   
   // Build the target URL
   const targetUrl = `${BITBUCKET_SERVER}/rest/api/latest/${path}${queryString}`;
