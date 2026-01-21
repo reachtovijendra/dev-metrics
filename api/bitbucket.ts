@@ -1,9 +1,7 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-
 // Bitbucket Data Center server URL
 const BITBUCKET_SERVER = process.env.BITBUCKET_SERVER_URL || 'https://acapgit.acacceptance.com';
 
-module.exports = async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req: any, res: any) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -34,12 +32,12 @@ module.exports = async function handler(req: VercelRequest, res: VercelResponse)
   
   try {
     // Bitbucket Data Center uses Bearer token (HTTP Access Token)
-    const headers: HeadersInit = {
+    const headers: any = {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
 
-    const fetchOptions: RequestInit = {
+    const fetchOptions: any = {
       method: req.method,
       headers
     };
@@ -61,11 +59,11 @@ module.exports = async function handler(req: VercelRequest, res: VercelResponse)
 
     return res.status(response.status).json(data);
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Bitbucket API proxy error:', error);
     return res.status(500).json({ 
       error: 'Failed to proxy request to Bitbucket API',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error?.message || 'Unknown error'
     });
   }
 };

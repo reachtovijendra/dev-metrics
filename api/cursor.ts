@@ -1,8 +1,8 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+const { VercelRequest, VercelResponse } = require('@vercel/node');
 
 const CURSOR_API_BASE = 'https://api.cursor.com';
 
-module.exports = async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req: any, res: any) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -39,14 +39,14 @@ module.exports = async function handler(req: VercelRequest, res: VercelResponse)
     // Prepare headers - Cursor uses Basic Auth with apiKey as username
     const authHeader = 'Basic ' + Buffer.from(`${apiKey}:`).toString('base64');
     
-    const headers: HeadersInit = {
+    const headers: any = {
       'Authorization': authHeader,
       'Content-Type': 'application/json',
       'X-Requested-With': 'XMLHttpRequest'
     };
 
     // Forward the request
-    const fetchOptions: RequestInit = {
+    const fetchOptions: any = {
       method: req.method,
       headers
     };
@@ -75,14 +75,11 @@ module.exports = async function handler(req: VercelRequest, res: VercelResponse)
     // Return the response
     return res.status(response.status).json(data);
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Cursor API proxy error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : '';
-    console.error('Error stack:', errorStack);
     return res.status(500).json({ 
       error: 'Failed to proxy request to Cursor API',
-      details: errorMessage,
+      details: error?.message || 'Unknown error',
       targetUrl: targetUrl
     });
   }

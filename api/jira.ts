@@ -1,8 +1,6 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-
 const JIRA_API_BASE = 'https://acacceptance.atlassian.net/rest/api/3';
 
-module.exports = async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req: any, res: any) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -36,13 +34,13 @@ module.exports = async function handler(req: VercelRequest, res: VercelResponse)
     // JIRA Cloud uses Basic Auth with email:apiToken
     const authHeader = 'Basic ' + Buffer.from(`${email}:${apiToken}`).toString('base64');
     
-    const headers: HeadersInit = {
+    const headers: any = {
       'Authorization': authHeader,
       'Content-Type': 'application/json',
       'X-Requested-With': 'XMLHttpRequest'
     };
 
-    const fetchOptions: RequestInit = {
+    const fetchOptions: any = {
       method: req.method,
       headers
     };
@@ -64,11 +62,11 @@ module.exports = async function handler(req: VercelRequest, res: VercelResponse)
 
     return res.status(response.status).json(data);
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('JIRA API proxy error:', error);
     return res.status(500).json({ 
       error: 'Failed to proxy request to JIRA API',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error?.message || 'Unknown error'
     });
   }
 };
