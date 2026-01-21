@@ -76,7 +76,6 @@ export interface CursorAggregatedMetrics {
   spendingUsd: number;
   activeDays: number;
   favoriteModel?: string;
-  lastUsedAt?: number; // Unix timestamp (UTC) - last activity
 }
 
 // Spending API Models
