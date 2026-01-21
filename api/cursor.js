@@ -1,8 +1,6 @@
-const { VercelRequest, VercelResponse } = require('@vercel/node');
-
 const CURSOR_API_BASE = 'https://api.cursor.com';
 
-module.exports = async function handler(req: any, res: any) {
+module.exports = async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -39,14 +37,14 @@ module.exports = async function handler(req: any, res: any) {
     // Prepare headers - Cursor uses Basic Auth with apiKey as username
     const authHeader = 'Basic ' + Buffer.from(`${apiKey}:`).toString('base64');
     
-    const headers: any = {
+    const headers = {
       'Authorization': authHeader,
       'Content-Type': 'application/json',
       'X-Requested-With': 'XMLHttpRequest'
     };
 
     // Forward the request
-    const fetchOptions: any = {
+    const fetchOptions = {
       method: req.method,
       headers
     };
@@ -64,7 +62,7 @@ module.exports = async function handler(req: any, res: any) {
     const contentType = response.headers.get('content-type');
     let data;
     
-    if (contentType?.includes('application/json')) {
+    if (contentType && contentType.includes('application/json')) {
       data = await response.json();
     } else {
       data = await response.text();
@@ -75,12 +73,13 @@ module.exports = async function handler(req: any, res: any) {
     // Return the response
     return res.status(response.status).json(data);
     
-  } catch (error: any) {
+  } catch (error) {
     console.error('Cursor API proxy error:', error);
     return res.status(500).json({ 
       error: 'Failed to proxy request to Cursor API',
-      details: error?.message || 'Unknown error',
+      details: error.message || 'Unknown error',
       targetUrl: targetUrl
     });
   }
 };
+
