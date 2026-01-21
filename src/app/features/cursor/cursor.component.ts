@@ -95,7 +95,7 @@ interface DeveloperCursorMetrics {
         <!-- KPI Summary -->
         <div class="metrics-grid">
           <app-metric-card
-            label="AI Lines Suggested"
+            label="AI Lines Generated"
             [value]="totalMetrics().linesSuggested"
             icon="pi-code"
             iconBg="#3b82f6"
@@ -142,7 +142,7 @@ interface DeveloperCursorMetrics {
             <ng-template pTemplate="header">
               <tr>
                 <th pSortableColumn="name">Developer <p-sortIcon field="name" /></th>
-                <th pSortableColumn="totalLinesSuggested">Lines Suggested <p-sortIcon field="totalLinesSuggested" /></th>
+                <th pSortableColumn="totalLinesSuggested">Lines Generated <p-sortIcon field="totalLinesSuggested" /></th>
                 <th pSortableColumn="tabsAccepted">Tab Completions <p-sortIcon field="tabsAccepted" /></th>
                 <th pSortableColumn="requests">AI Requests <p-sortIcon field="requests" /></th>
                 <th pSortableColumn="activeDays">Active Days <p-sortIcon field="activeDays" /></th>
@@ -215,38 +215,6 @@ interface DeveloperCursorMetrics {
           </p-card>
         </div>
 
-        <!-- Spending Breakdown -->
-        <div class="spending-row">
-          <p-card styleClass="spending-card">
-            <ng-template pTemplate="header">
-              <div class="card-title">
-                <h3>Usage Breakdown</h3>
-              </div>
-            </ng-template>
-            <div class="spending-grid">
-              <div class="spending-item">
-                <span class="spending-label">Composer Requests</span>
-                <span class="spending-value">{{ totalMetrics().composerRequests | number }}</span>
-              </div>
-              <div class="spending-item">
-                <span class="spending-label">Chat Requests</span>
-                <span class="spending-value">{{ totalMetrics().chatRequests | number }}</span>
-              </div>
-              <div class="spending-item">
-                <span class="spending-label">Agent Requests</span>
-                <span class="spending-value">{{ totalMetrics().agentRequests | number }}</span>
-              </div>
-              <div class="spending-item">
-                <span class="spending-label">Usage-Based Requests</span>
-                <span class="spending-value">{{ totalMetrics().usageBasedRequests | number }}</span>
-              </div>
-              <div class="spending-item company-spending">
-                <span class="spending-label">Company Total (Billing Cycle)</span>
-                <span class="spending-value highlight">\${{ totalMetrics().companyTotalSpending.toFixed(2) | number:'1.2-2' }}</span>
-              </div>
-            </div>
-          </p-card>
-        </div>
       }
     </div>
   `,
@@ -373,13 +341,8 @@ interface DeveloperCursorMetrics {
       }
     }
 
-    .spending-row {
-      margin-bottom: 1.5rem;
-    }
-
     :host ::ng-deep .chart-card,
-    :host ::ng-deep .table-card,
-    :host ::ng-deep .spending-card {
+    :host ::ng-deep .table-card {
       background: var(--surface-card);
       border: 1px solid var(--surface-border);
       border-radius: 12px;
@@ -401,40 +364,6 @@ interface DeveloperCursorMetrics {
       margin: 0;
     }
 
-    .spending-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .spending-item {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      padding: 1rem;
-      background: var(--surface-hover);
-      border-radius: 8px;
-
-      .spending-label {
-        color: var(--text-color-secondary);
-        font-size: 0.875rem;
-      }
-
-      .spending-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--text-color);
-
-        &.highlight {
-          color: #ef4444;
-        }
-      }
-
-      &.company-spending {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
-        border: 1px solid rgba(239, 68, 68, 0.2);
-      }
-    }
 
     .developer-cell {
       display: flex;
