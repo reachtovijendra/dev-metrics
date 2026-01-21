@@ -231,8 +231,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     { label: 'Bitbucket', icon: 'pi-github', route: '/bitbucket' },
     { label: 'Cursor AI', icon: 'pi-sparkles', route: '/cursor' },
     { label: 'JIRA', icon: 'pi-ticket', route: '/jira' },
-    { label: 'Developers', icon: 'pi-users', route: '/developers' },
-    { label: 'Settings', icon: 'pi-cog', route: '/settings' }
+    { label: 'Developers', icon: 'pi-users', route: '/developers' }
+    // Settings hidden from nav - access via direct URL /settings
   ];
 
   ngOnInit(): void {
