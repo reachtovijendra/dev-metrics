@@ -146,10 +146,28 @@ export class CursorService {
       endDate: this.formatDate(dateRange.endDate)
     };
 
+    console.log('=== DAILY USAGE API REQUEST ===');
+    console.log('URL:', `${this.baseUrl}/teams/daily-usage-data`);
+    console.log('Request body:', request);
+
     return this.http.post<CursorDailyUsageResponse>(
       `${this.baseUrl}/teams/daily-usage-data`,
       request
     ).pipe(
+      tap(response => {
+        console.log('=== DAILY USAGE API RESPONSE ===');
+        console.log('Total records:', response.data?.length || 0);
+        if (response.data?.length > 0) {
+          console.log('Sample record:', response.data[0]);
+          // Log fields that contribute to activeDays and requests
+          const sample = response.data[0];
+          console.log('Sample fields - composerRequests:', sample.composerRequests, 
+                      'chatRequests:', sample.chatRequests, 
+                      'agentRequests:', sample.agentRequests,
+                      'acceptedLinesAdded:', sample.acceptedLinesAdded,
+                      'totalTabsAccepted:', sample.totalTabsAccepted);
+        }
+      }),
       catchError(err => {
         console.error('Error fetching daily usage:', err);
         return of({ data: [] });
