@@ -32,7 +32,6 @@ interface DeveloperCursorMetrics {
   tabsAccepted: number;
   requests: number;
   activeDays: number;
-  lastUsedAt?: string; // YYYY-MM-DD format
   spending: number;
   billingCycleSpending: number; // Full billing cycle spending
   favoriteModel: string;
@@ -146,7 +145,6 @@ interface DeveloperCursorMetrics {
                 <th pSortableColumn="tabsAccepted">Tab Completions <p-sortIcon field="tabsAccepted" /></th>
                 <th pSortableColumn="requests">AI Requests <p-sortIcon field="requests" /></th>
                 <th pSortableColumn="activeDays">Active Days <p-sortIcon field="activeDays" /></th>
-                <th pSortableColumn="lastUsedAt">Last Used <p-sortIcon field="lastUsedAt" /></th>
                 <th pSortableColumn="spending">Spending <p-sortIcon field="spending" /></th>
                 <th pSortableColumn="favoriteModel">Favorite Model <p-sortIcon field="favoriteModel" /></th>
               </tr>
@@ -183,9 +181,6 @@ interface DeveloperCursorMetrics {
                 <td><span class="metric-value" [class.excluded]="dev.excluded">{{ dev.requests | number }}</span></td>
                 <td>
                   <span class="metric-value" [class.excluded]="dev.excluded">{{ dev.activeDays }}</span>
-                </td>
-                <td>
-                  <span class="metric-value last-used" [class.excluded]="dev.excluded">{{ formatLastUsed(dev.lastUsedAt) }}</span>
                 </td>
                 <td>
                   <span class="spending-amount" [class.excluded]="dev.excluded">\${{ getDevSpending(dev).toFixed(2) }}</span>
@@ -797,7 +792,6 @@ export class CursorComponent implements OnInit, OnDestroy {
       tabsAccepted: 0,
       requests: 0,
       activeDays: 0,
-      lastUsedAt: undefined,
       spending: 0,
       billingCycleSpending: 0,
       favoriteModel: '—',
@@ -987,7 +981,6 @@ export class CursorComponent implements OnInit, OnDestroy {
               console.log('  - Tab Completions (totalTabsAccepted):', andrewAdmin.totalTabsAccepted);
               console.log('  - Active Days:', andrewAdmin.activeDays);
               console.log('  - Total Requests:', andrewAdmin.totalRequests);
-              console.log('  - Last Used At:', andrewAdmin.lastUsedAt || 'N/A');
               console.log('  - Full object:', andrewAdmin);
             } else {
               console.log('ADMIN API: Andrew Eubanks NOT FOUND');
@@ -1030,10 +1023,10 @@ export class CursorComponent implements OnInit, OnDestroy {
                 // Use Analytics API for lines and tabs (matches CSV!)
                 // Use Admin API for requests, active days, and last used date
                 totalRequests: admin?.totalRequests || 0,
-                activeDays: admin?.activeDays || 0,
-                lastUsedAt: admin?.lastUsedAt
+                activeDays: admin?.activeDays || 0
               };
             });
+            
             // Map billing cycle spending by email
             const billingSpendingByEmail = new Map(
               spending.teamMemberSpend.map(s => [
@@ -1083,7 +1076,6 @@ export class CursorComponent implements OnInit, OnDestroy {
                 tabsAccepted: m.totalTabsAccepted,
                 requests: m.totalRequests,
                 activeDays: m.activeDays,
-                lastUsedAt: m.lastUsedAt,
                 spending: dateRangeSpend,
                 billingCycleSpending: billingCycleSpend, // Store full billing cycle spending
                 favoriteModel: m.favoriteModel || '—',
@@ -1221,22 +1213,6 @@ export class CursorComponent implements OnInit, OnDestroy {
     const agentLines = dev.agentLinesSuggested.toLocaleString();
     const tabLines = dev.tabLinesSuggested.toLocaleString();
     return `Agent: ${agentLines}\nTab: ${tabLines}`;
-  }
-
-  formatLastUsed(dateStr?: string): string {
-    if (!dateStr) return '—';
-    // dateStr is YYYY-MM-DD from API - just format it nicely, no calculations
-    const [year, month, day] = dateStr.split('-');
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const monthName = months[parseInt(month, 10) - 1];
-    const dayNum = parseInt(day, 10);
-    
-    const isWideScreen = window.innerWidth > 1400;
-    if (isWideScreen) {
-      return `${monthName} ${dayNum}, ${year}`;
-    } else {
-      return `${monthName} ${dayNum}`;
-    }
   }
 
   private formatDate(date: Date): string {

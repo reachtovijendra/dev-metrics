@@ -224,16 +224,23 @@ export class CursorService {
       map(response => {
         const userMetricsMap = new Map<string, CursorAggregatedMetrics>();
 
-        // Debug: Log all days for Andrew Eubanks
-        const andrewEmail = 'andrew.eubanks@acacceptance.com';
-        const andrewDays = response.data.filter(d => d.email?.toLowerCase() === andrewEmail.toLowerCase());
-        console.log('=== ANDREW EUBANKS - ALL DAILY DATA ===');
-        console.log('Total days in response:', andrewDays.length);
-        andrewDays.forEach(d => {
-          const dailyReqs = (d.composerRequests || 0) + (d.chatRequests || 0) + (d.agentRequests || 0);
-          console.log(`  Day: ${d.day}, isActive: ${d.isActive}, Requests: ${dailyReqs}, Lines: ${d.acceptedLinesAdded}, Tabs: ${d.totalTabsAccepted}, CmdK: ${d.cmdkUsages}, Applies: ${d.totalApplies}`);
+        // Debug: Log all days for specific users
+        const debugUsers = [
+          'andrew.eubanks@acacceptance.com',
+          'gavin.puckett@acacceptance.com'
+        ];
+        
+        debugUsers.forEach(email => {
+          const userDays = response.data.filter(d => d.email?.toLowerCase() === email.toLowerCase());
+          const name = email.split('@')[0].replace('.', ' ');
+          console.log(`=== ${name.toUpperCase()} - ALL DAILY DATA ===`);
+          console.log('Total days in response:', userDays.length);
+          userDays.forEach(d => {
+            const dailyReqs = (d.composerRequests || 0) + (d.chatRequests || 0) + (d.agentRequests || 0);
+            console.log(`  Day: ${d.day}, isActive: ${d.isActive}, Requests: ${dailyReqs}, Lines: ${d.acceptedLinesAdded}, Tabs: ${d.totalTabsAccepted}`);
+          });
+          console.log(`=== END ${name.toUpperCase()} DAYS ===`);
         });
-        console.log('=== END ANDREW DAYS ===');
 
         for (const dailyUsage of response.data) {
           const existing = userMetricsMap.get(dailyUsage.userId);
@@ -265,10 +272,6 @@ export class CursorService {
             // Only count as active day if there was actual activity
             if (hadActivity) {
               existing.activeDays += 1;
-              // Track last used date (d.day is YYYY-MM-DD format)
-              if (!existing.lastUsedAt || d.day > existing.lastUsedAt) {
-                existing.lastUsedAt = d.day;
-              }
             }
           } else {
             userMetricsMap.set(d.userId, {
@@ -283,8 +286,7 @@ export class CursorService {
               totalRequests: dailyRequests,
               spendingUsd: d.usageBasedReqs * 0.01,
               // Only count as active day if there was actual activity
-              activeDays: hadActivity ? 1 : 0,
-              lastUsedAt: hadActivity ? d.day : undefined
+              activeDays: hadActivity ? 1 : 0
             });
           }
         }
