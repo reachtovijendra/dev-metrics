@@ -971,6 +971,34 @@ export class CursorComponent implements OnInit, OnDestroy {
           )
         }).subscribe({
           next: ({ summary, analyticsMetrics, adminMetrics, billingCycleMetrics }) => {
+            // === COMPARISON LOGGING ===
+            console.log('=== ANALYTICS vs ADMIN API COMPARISON ===');
+            console.log('Date Range:', this.formatDate(dateRange.startDate), 'to', this.formatDate(dateRange.endDate));
+            
+            // Calculate totals from each API
+            const analyticsTotal = analyticsMetrics.reduce((sum, m) => sum + m.totalLinesGenerated, 0);
+            const adminTotal = adminMetrics.reduce((sum, m) => sum + m.totalLinesGenerated, 0);
+            const analyticsTabsTotal = analyticsMetrics.reduce((sum, m) => sum + m.totalTabsAccepted, 0);
+            const adminTabsTotal = adminMetrics.reduce((sum, m) => sum + m.totalTabsAccepted, 0);
+            
+            console.log('--- TOTALS ---');
+            console.log('Analytics API - Lines:', analyticsTotal, '| Tabs:', analyticsTabsTotal);
+            console.log('Admin API     - Lines:', adminTotal, '| Tabs:', adminTabsTotal);
+            console.log('Difference    - Lines:', analyticsTotal - adminTotal, '| Tabs:', analyticsTabsTotal - adminTabsTotal);
+            
+            console.log('--- PER DEVELOPER COMPARISON (showing differences) ---');
+            analyticsMetrics.forEach((analytics, idx) => {
+              const admin = adminMetrics[idx];
+              const linesDiff = analytics.totalLinesGenerated - (admin?.totalLinesGenerated || 0);
+              const tabsDiff = analytics.totalTabsAccepted - (admin?.totalTabsAccepted || 0);
+              
+              // Only log if there's a difference
+              if (Math.abs(linesDiff) > 10 || Math.abs(tabsDiff) > 5) {
+                console.log(`${analytics.name}: Analytics(Lines=${analytics.totalLinesGenerated}, Tabs=${analytics.totalTabsAccepted}) vs Admin(Lines=${admin?.totalLinesGenerated || 0}, Tabs=${admin?.totalTabsAccepted || 0}) | Diff: Lines=${linesDiff}, Tabs=${tabsDiff}`);
+              }
+            });
+            console.log('=== END COMPARISON ===');
+            
             // Merge Analytics API data (lines, tabs) with Admin API data (requests)
             const metrics = analyticsMetrics.map((analytics, idx) => {
               const admin = adminMetrics[idx];
@@ -1156,6 +1184,10 @@ export class CursorComponent implements OnInit, OnDestroy {
 
   getInitials(name: string): string {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  private formatDate(date: Date): string {
+    return date.toISOString().split('T')[0];
   }
 
   toggleDeveloperExclusion(dev: DeveloperCursorMetrics): void {
