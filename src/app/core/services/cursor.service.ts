@@ -265,9 +265,9 @@ export class CursorService {
             // Only count as active day if there was actual activity
             if (hadActivity) {
               existing.activeDays += 1;
-              // Track last used date (d.date is Unix timestamp)
-              if (!existing.lastUsedAt || d.date > existing.lastUsedAt) {
-                existing.lastUsedAt = d.date;
+              // Track last used date (d.day is YYYY-MM-DD format)
+              if (!existing.lastUsedAt || d.day > existing.lastUsedAt) {
+                existing.lastUsedAt = d.day;
               }
             }
           } else {
@@ -284,7 +284,7 @@ export class CursorService {
               spendingUsd: d.usageBasedReqs * 0.01,
               // Only count as active day if there was actual activity
               activeDays: hadActivity ? 1 : 0,
-              lastUsedAt: hadActivity ? d.date : undefined
+              lastUsedAt: hadActivity ? d.day : undefined
             });
           }
         }

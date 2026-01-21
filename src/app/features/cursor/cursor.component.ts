@@ -32,7 +32,7 @@ interface DeveloperCursorMetrics {
   tabsAccepted: number;
   requests: number;
   activeDays: number;
-  lastUsedAt?: number; // Unix timestamp
+  lastUsedAt?: string; // YYYY-MM-DD format
   spending: number;
   billingCycleSpending: number; // Full billing cycle spending
   favoriteModel: string;
@@ -987,8 +987,7 @@ export class CursorComponent implements OnInit, OnDestroy {
               console.log('  - Tab Completions (totalTabsAccepted):', andrewAdmin.totalTabsAccepted);
               console.log('  - Active Days:', andrewAdmin.activeDays);
               console.log('  - Total Requests:', andrewAdmin.totalRequests);
-              console.log('  - Last Used At (timestamp):', andrewAdmin.lastUsedAt);
-              console.log('  - Last Used At (date):', andrewAdmin.lastUsedAt ? new Date(andrewAdmin.lastUsedAt).toISOString() : 'N/A');
+              console.log('  - Last Used At:', andrewAdmin.lastUsedAt || 'N/A');
               console.log('  - Full object:', andrewAdmin);
             } else {
               console.log('ADMIN API: Andrew Eubanks NOT FOUND');
@@ -1224,23 +1223,27 @@ export class CursorComponent implements OnInit, OnDestroy {
     return `Agent: ${agentLines}\nTab: ${tabLines}`;
   }
 
-  formatLastUsed(timestamp?: number): string {
-    if (!timestamp) return '—';
-    const date = new Date(timestamp);
+  formatLastUsed(dateStr?: string): string {
+    if (!dateStr) return '—';
+    // dateStr is in YYYY-MM-DD format, parse as UTC to avoid timezone issues
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
     // Check screen width to determine format
     const isWideScreen = window.innerWidth > 1400;
     if (isWideScreen) {
-      // Show full date: "Jan 21, 2026" (API only has day-level data, not time)
+      // Show full date: "Jan 21, 2026"
       return date.toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric', 
-        year: 'numeric'
+        year: 'numeric',
+        timeZone: 'UTC'
       });
     } else {
       // Show short date: "Jan 21"
       return date.toLocaleDateString('en-US', { 
         month: 'short', 
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'UTC'
       });
     }
   }
