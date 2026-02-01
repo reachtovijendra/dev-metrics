@@ -864,6 +864,224 @@ export class CursorService {
       })
     );
   }
+
+  /**
+   * Get filtered usage events with detailed costs
+   * Endpoint: POST /teams/filtered-usage-events
+   * This endpoint supports date range filtering and returns costs per event!
+   * Per Cursor docs: "To match dashboard totals, add cursorTokenFee to tokenUsage.totalCents"
+   */
+  getFilteredUsageEvents(
+    dateRange: DateRange,
+    page = 1,
+    pageSize = 100
+  ): Observable<FilteredUsageEventsResponse> {
+    const request = {
+      startDate: this.formatDate(dateRange.startDate),
+      endDate: this.formatDate(dateRange.endDate),
+      page,
+      pageSize
+    };
+
+    return this.http.post<FilteredUsageEventsResponse>(
+      `${this.baseUrl}/teams/filtered-usage-events`,
+      request
+    ).pipe(
+      tap(response => {
+        if (page === 1) {
+          console.log('=== FILTERED USAGE EVENTS RESPONSE ===');
+          console.log('Total events:', response.totalUsageEventsCount);
+          console.log('Pages:', response.pagination.numPages);
+        }
+      }),
+      catchError(err => {
+        console.error('Error fetching filtered usage events:', err);
+        return of({
+          totalUsageEventsCount: 0,
+          pagination: {
+            numPages: 0,
+            currentPage: page,
+            pageSize,
+            hasNextPage: false,
+            hasPreviousPage: false
+          },
+          usageEvents: [],
+          period: {
+            startDate: dateRange.startDate.getTime(),
+            endDate: dateRange.endDate.getTime()
+          }
+        });
+      })
+    );
+  }
+
+  /**
+   * Get ALL filtered usage events by fetching pages sequentially with rate limiting
+   * Returns aggregated spending per user for the date range
+   * Note: API rate limit is 20 requests/minute, so we add delays between batches
+   * @param dateRange - The date range to fetch events for
+   * @param onProgress - Optional callback for progress updates
+   */
+  getAllUsageEventsSpending(
+    dateRange: DateRange, 
+    onProgress?: (current: number, total: number, message: string) => void
+  ): Observable<UserSpendingFromEvents[]> {
+    // Use larger page size to reduce number of requests
+    const pageSize = 500; // Max supported by API
+    
+    // Report initial progress
+    if (onProgress) {
+      onProgress(0, 1, 'Starting...');
+    }
+    
+    return this.getFilteredUsageEvents(dateRange, 1, pageSize).pipe(
+      switchMap(firstPage => {
+        let allEvents = [...firstPage.usageEvents];
+        
+        if (firstPage.pagination.numPages <= 1) {
+          console.log('Usage events: Single page,', firstPage.totalUsageEventsCount, 'total events');
+          if (onProgress) {
+            onProgress(1, 1, 'Complete');
+          }
+          return of(this.aggregateSpendingFromEvents(allEvents));
+        }
+
+        const totalPages = firstPage.pagination.numPages;
+        console.log(`Usage events: Need to fetch ${totalPages} pages (${firstPage.totalUsageEventsCount} events)`);
+        
+        // Report initial progress
+        if (onProgress) {
+          onProgress(1, totalPages, `Page 1/${totalPages} (~3 min)`);
+        }
+        
+        // Fetch remaining pages sequentially with delays to avoid rate limiting
+        const fetchRemainingPages = (currentPage: number, events: UsageEvent[]): Observable<UsageEvent[]> => {
+          if (currentPage > totalPages) {
+            return of(events);
+          }
+          
+          return this.getFilteredUsageEvents(dateRange, currentPage, pageSize).pipe(
+            switchMap(response => {
+              const combined = [...events, ...response.usageEvents];
+              console.log(`Fetched page ${currentPage}/${totalPages}: ${response.usageEvents.length} events, total: ${combined.length}`);
+              
+              // Report progress
+              if (onProgress) {
+                const remainingSec = (totalPages - currentPage) * 3;
+                const remainingMin = Math.ceil(remainingSec / 60);
+                const timeMsg = remainingMin > 1 ? `~${remainingMin} min` : `~${remainingSec}s`;
+                onProgress(currentPage, totalPages, `Page ${currentPage}/${totalPages} (${timeMsg})`);
+              }
+              
+              if (currentPage >= totalPages) {
+                if (onProgress) {
+                  onProgress(totalPages, totalPages, 'Complete');
+                }
+                return of(combined);
+              }
+              
+              // Add delay before next request to respect rate limits (3 seconds between requests)
+              return new Observable<UsageEvent[]>(observer => {
+                setTimeout(() => {
+                  fetchRemainingPages(currentPage + 1, combined).subscribe({
+                    next: result => observer.next(result),
+                    error: err => observer.error(err),
+                    complete: () => observer.complete()
+                  });
+                }, 3000);
+              });
+            })
+          );
+        };
+        
+        return fetchRemainingPages(2, allEvents).pipe(
+          map(events => {
+            console.log(`Usage events: Fetched ${events.length} events total`);
+            if (onProgress) {
+              onProgress(totalPages, totalPages, 'Processing...');
+            }
+            return this.aggregateSpendingFromEvents(events);
+          })
+        );
+      }),
+      tap(spending => {
+        const totalCents = spending.reduce((sum, s) => sum + s.totalCents, 0);
+        console.log('Total spending from usage events:', `$${(totalCents / 100).toFixed(2)}`);
+      })
+    );
+  }
+
+  /**
+   * Aggregate spending from usage events by user email
+   * Per Cursor docs: cost = tokenUsage.totalCents + cursorTokenFee
+   */
+  private aggregateSpendingFromEvents(events: UsageEvent[]): UserSpendingFromEvents[] {
+    const spendingByUser = new Map<string, { totalCents: number; eventCount: number }>();
+    
+    for (const event of events) {
+      const email = event.userEmail.toLowerCase();
+      // Calculate cost: tokenUsage.totalCents + cursorTokenFee (per Cursor docs)
+      const tokenCost = event.tokenUsage?.totalCents || 0;
+      const cursorFee = event.cursorTokenFee || 0;
+      const totalCost = tokenCost + cursorFee;
+      
+      const existing = spendingByUser.get(email);
+      if (existing) {
+        existing.totalCents += totalCost;
+        existing.eventCount += 1;
+      } else {
+        spendingByUser.set(email, { totalCents: totalCost, eventCount: 1 });
+      }
+    }
+    
+    return Array.from(spendingByUser.entries()).map(([email, data]) => ({
+      email,
+      totalCents: data.totalCents,
+      eventCount: data.eventCount
+    }));
+  }
+}
+
+// Interfaces for filtered usage events
+interface FilteredUsageEventsResponse {
+  totalUsageEventsCount: number;
+  pagination: {
+    numPages: number;
+    currentPage: number;
+    pageSize: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+  usageEvents: UsageEvent[];
+  period: {
+    startDate: number;
+    endDate: number;
+  };
+}
+
+interface UsageEvent {
+  timestamp: string;
+  model: string;
+  kind: string;
+  maxMode?: boolean;
+  requestsCosts?: number;
+  isTokenBasedCall?: boolean;
+  tokenUsage?: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheWriteTokens?: number;
+    cacheReadTokens?: number;
+    totalCents: number;
+  };
+  cursorTokenFee?: number;
+  isFreeBugbot?: boolean;
+  userEmail: string;
+}
+
+export interface UserSpendingFromEvents {
+  email: string;
+  totalCents: number;
+  eventCount: number;
 }
 
 

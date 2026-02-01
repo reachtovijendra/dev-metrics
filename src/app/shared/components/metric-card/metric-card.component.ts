@@ -17,6 +17,10 @@ import { CardModule } from 'primeng/card';
       
       <div class="metric-value">{{ formattedValue() }}</div>
       
+      @if (subtitle()) {
+        <div class="metric-subtitle">{{ subtitle() }}</div>
+      }
+      
       @if (change() !== undefined) {
         <div class="metric-change" [class.positive]="change()! >= 0" [class.negative]="change()! < 0">
           <i [class]="change()! >= 0 ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
@@ -74,6 +78,15 @@ import { CardModule } from 'primeng/card';
       margin-bottom: 0.5rem;
     }
 
+    .metric-subtitle {
+      font-size: 0.75rem;
+      color: #f59e0b;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     .metric-change {
       display: flex;
       align-items: center;
@@ -108,6 +121,7 @@ export class MetricCardComponent {
   trend = input<'up' | 'down' | 'neutral'>('neutral');
   format = input<'number' | 'currency' | 'percent' | 'decimal'>('number');
   decimals = input<number>(1);
+  subtitle = input<string>('');
 
   Math = Math;
 

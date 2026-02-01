@@ -113,11 +113,12 @@ interface DeveloperCursorMetrics {
             format="decimal"
           />
           <app-metric-card
-            label="Team Spending"
+            [label]="spendingLoading() ? 'Team Spending (Loading...)' : 'Team Spending'"
             [value]="displaySpending()"
             icon="pi-dollar"
             iconBg="#ef4444"
             format="currency"
+            [subtitle]="spendingLoading() ? spendingProgress().message : ''"
           />
         </div>
 
@@ -183,7 +184,13 @@ interface DeveloperCursorMetrics {
                   <span class="metric-value" [class.excluded]="dev.excluded">{{ dev.activeDays }}</span>
                 </td>
                 <td>
-                  <span class="spending-amount" [class.excluded]="dev.excluded">\${{ getDevSpending(dev).toFixed(2) }}</span>
+                  @if (spendingLoading() && spendingMode === 'dateRange' && getDevSpending(dev) === 0) {
+                    <span class="spending-loading">
+                      <i class="pi pi-spin pi-spinner"></i>
+                    </span>
+                  } @else {
+                    <span class="spending-amount" [class.excluded]="dev.excluded">\${{ getDevSpending(dev).toFixed(2) }}</span>
+                  }
                 </td>
                 <td>
                   <span class="model-name" [class.excluded]="dev.excluded">{{ dev.favoriteModel }}</span>
@@ -518,6 +525,22 @@ interface DeveloperCursorMetrics {
       color: #ef4444;
     }
 
+    .spending-loading {
+      display: inline-flex;
+      align-items: center;
+      color: #f59e0b;
+      font-size: 0.9rem;
+    }
+
+    .spending-loading i {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     /* Pagination Styling */
     :host ::ng-deep .p-paginator {
       background: var(--surface-card) !important;
@@ -591,6 +614,8 @@ export class CursorComponent implements OnInit, OnDestroy {
   private injector = inject(Injector);
 
   loading = signal(false);
+  spendingLoading = signal(false);
+  spendingProgress = signal({ current: 0, total: 0, message: '' });
 
   // Store user's custom date range (to restore when switching back from billing cycle)
   private userDateRange: Date[] = [...this.pageHeaderService.dateRange()];
@@ -903,6 +928,19 @@ export class CursorComponent implements OnInit, OnDestroy {
         // Now fetch all metrics with actual billing cycle dates
         // Try Analytics API first (matches CSV exports exactly)
         // Fall back to Admin API if Analytics API fails
+        
+        // Set spending loading state and start fetching usage events separately for progress tracking
+        this.spendingLoading.set(true);
+        this.spendingProgress.set({ current: 0, total: 0, message: 'Starting...' });
+        
+        // Create the spending observable with progress callback
+        const usageEventsSpending$ = this.cursorService.getAllUsageEventsSpending(
+          dateRange,
+          (current, total, message) => {
+            this.spendingProgress.set({ current, total, message });
+          }
+        );
+        
         forkJoin({
           summary: this.cursorService.getTeamSummary(dateRange),
           // Use Analytics API for accurate CSV-matching metrics
@@ -920,9 +958,14 @@ export class CursorComponent implements OnInit, OnDestroy {
             this.configuredDevelopers,
             billingCycleRange,
             false
-          )
+          ),
+          // Get actual spending from filtered usage events (supports date range!)
+          usageEventsSpending: usageEventsSpending$
         }).subscribe({
-          next: ({ summary, analyticsMetrics, adminMetrics, billingCycleMetrics }) => {
+          next: ({ summary, analyticsMetrics, adminMetrics, billingCycleMetrics, usageEventsSpending }) => {
+            // Clear spending loading state
+            this.spendingLoading.set(false);
+            this.spendingProgress.set({ current: 0, total: 0, message: '' });
             // === COMPARISON LOGGING ===
             console.log('=== ANALYTICS vs ADMIN API COMPARISON ===');
             console.log('Date Range:', this.formatDate(dateRange.startDate), 'to', this.formatDate(dateRange.endDate));
@@ -1015,54 +1058,69 @@ export class CursorComponent implements OnInit, OnDestroy {
               adminMetrics.map(m => [m.email.toLowerCase(), m])
             );
             
-            // Merge Analytics API data (lines, tabs) with Admin API data (requests, activeDays, lastUsedAt)
+            // Merge Analytics API data (lines, tabs) with Admin API data (requests, activeDays, spendingUsd)
             const metrics = analyticsMetrics.map((analytics) => {
               const admin = adminByEmail.get(analytics.email.toLowerCase());
               return {
                 ...analytics,
                 // Use Analytics API for lines and tabs (matches CSV!)
-                // Use Admin API for requests, active days, and last used date
+                // Use Admin API for requests, active days, and calculated spending
                 totalRequests: admin?.totalRequests || 0,
-                activeDays: admin?.activeDays || 0
+                activeDays: admin?.activeDays || 0,
+                // Store Admin API calculated spending (from usageBasedReqs) as fallback
+                adminSpendingUsd: admin?.spendingUsd || 0
               };
             });
             
-            // Map billing cycle spending by email
+            // Map billing cycle spending by email (from Spending API - current billing cycle only)
             const billingSpendingByEmail = new Map(
               spending.teamMemberSpend.map(s => [
                 s.email.toLowerCase(), 
                 (s.overallSpendCents || s.spendCents || 0) / 100
               ])
             );
+            
+            console.log('Spending map size:', billingSpendingByEmail.size);
+            console.log('Spending map entries (non-zero):');
+            billingSpendingByEmail.forEach((value, key) => {
+              if (value > 0) console.log(`  ${key}: $${value.toFixed(2)}`);
+            });
 
-            // Map billing cycle requests by email (to calculate proportion)
-            const billingCycleRequestsByEmail = new Map(
-              billingCycleMetrics.map(m => [m.email.toLowerCase(), m.totalRequests])
+            // Map usage events spending by email (ACTUAL date range spending from API!)
+            const usageEventsSpendingByEmail = new Map(
+              usageEventsSpending.map(s => [
+                s.email.toLowerCase(),
+                s.totalCents / 100 // Convert cents to dollars
+              ])
             );
+            
+            console.log('Usage Events spending map size:', usageEventsSpendingByEmail.size);
+            console.log('Usage Events spending entries (non-zero):');
+            usageEventsSpendingByEmail.forEach((value, key) => {
+              if (value > 0) console.log(`  ${key}: $${value.toFixed(2)}`);
+            });
 
-            // Calculate company-wide total spending (billing cycle)
-            const companyTotalSpending = spending.teamMemberSpend.reduce(
-              (sum, member) => sum + (member.overallSpendCents || member.spendCents || 0), 0
+            // Calculate company-wide total spending from usage events (date range)
+            const companyTotalSpending = usageEventsSpending.reduce(
+              (sum, s) => sum + s.totalCents, 0
             ) / 100;
+            console.log('Company total spending from usage events:', `$${companyTotalSpending.toFixed(2)}`);
 
             // Build developers array with both DATE RANGE and BILLING CYCLE spending
+            
             this.allDevelopers = metrics.map(m => {
               const emailLower = m.email.toLowerCase();
+              
+              // Get spending from Spending API (overallSpendCents) - billing cycle only
               const billingCycleSpend = billingSpendingByEmail.get(emailLower) || 0;
-              const billingCycleRequests = billingCycleRequestsByEmail.get(emailLower) || 0;
-              const dateRangeRequests = m.totalRequests;
+              
+              // Get ACTUAL spending from usage events API (supports date range!)
+              const dateRangeSpend = usageEventsSpendingByEmail.get(emailLower) || 0;
 
               // Find the configured developer to get filter fields
               const configDev = this.configuredDevelopers.find(
                 cd => cd.email.toLowerCase() === emailLower
               );
-
-              // Calculate date range spending based on request proportion
-              let dateRangeSpend = 0;
-              if (billingCycleRequests > 0 && dateRangeRequests > 0) {
-                const proportion = dateRangeRequests / billingCycleRequests;
-                dateRangeSpend = billingCycleSpend * proportion;
-              }
 
               return {
                 name: m.name,
@@ -1149,6 +1207,8 @@ export class CursorComponent implements OnInit, OnDestroy {
             console.error('Error fetching Cursor metrics:', err);
             this.initializeEmptyData();
             this.loading.set(false);
+            this.spendingLoading.set(false);
+            this.spendingProgress.set({ current: 0, total: 0, message: '' });
             this.pageHeaderService.setLoading(false);
           }
         });
@@ -1157,6 +1217,8 @@ export class CursorComponent implements OnInit, OnDestroy {
         console.error('Error fetching spending data:', err);
         this.initializeEmptyData();
         this.loading.set(false);
+        this.spendingLoading.set(false);
+        this.spendingProgress.set({ current: 0, total: 0, message: '' });
         this.pageHeaderService.setLoading(false);
       }
     });
