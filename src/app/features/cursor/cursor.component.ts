@@ -200,27 +200,6 @@ interface DeveloperCursorMetrics {
           </p-table>
         </p-card>
 
-        <!-- Charts -->
-        <div class="charts-row">
-          <p-card styleClass="chart-card">
-            <ng-template pTemplate="header">
-              <div class="card-title">
-                <h3>AI Code Generation Trends</h3>
-              </div>
-            </ng-template>
-            <p-chart type="line" [data]="generationTrendChart" [options]="lineChartOptions" height="280" />
-          </p-card>
-
-          <p-card styleClass="chart-card">
-            <ng-template pTemplate="header">
-              <div class="card-title">
-                <h3>Tab Completions by Developer</h3>
-              </div>
-            </ng-template>
-            <p-chart type="bar" [data]="tabCompletionsChart" [options]="horizontalBarOptions" height="280" />
-          </p-card>
-        </div>
-
       }
     </div>
   `,
@@ -336,18 +315,6 @@ interface DeveloperCursorMetrics {
       margin-bottom: 1.5rem;
     }
 
-    .charts-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-      margin-bottom: 1.5rem;
-
-      @media (max-width: 1024px) {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    :host ::ng-deep .chart-card,
     :host ::ng-deep .table-card {
       background: var(--surface-card);
       border: 1px solid var(--surface-border);
