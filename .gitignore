@@ -65,3 +65,6 @@ Thumbs.db
 *.flv
 *.mov
 *.wmv
+
+.vercel
+.env*.local
