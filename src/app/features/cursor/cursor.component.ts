@@ -26,7 +26,9 @@ interface DeveloperCursorMetrics {
   totalLinesSuggested: number;
   agentLinesSuggested: number;
   tabLinesSuggested: number;
-  totalLinesGenerated: number;
+  totalLinesGenerated: number;  // Total accepted lines (agent + tab)
+  agentLinesAccepted: number;   // Agent/composer lines accepted
+  tabLinesAccepted: number;     // Tab lines accepted
   acceptedLines: number;
   totalTabs: number;
   tabsAccepted: number;
@@ -94,8 +96,8 @@ interface DeveloperCursorMetrics {
         <!-- KPI Summary -->
         <div class="metrics-grid">
           <app-metric-card
-            label="AI Lines Generated"
-            [value]="totalMetrics().linesSuggested"
+            label="AI Lines Accepted"
+            [value]="totalMetrics().linesGenerated"
             icon="pi-code"
             iconBg="#3b82f6"
           />
@@ -142,7 +144,7 @@ interface DeveloperCursorMetrics {
             <ng-template pTemplate="header">
               <tr>
                 <th pSortableColumn="name">Developer <p-sortIcon field="name" /></th>
-                <th pSortableColumn="totalLinesSuggested">Lines Generated <p-sortIcon field="totalLinesSuggested" /></th>
+                <th pSortableColumn="totalLinesGenerated">Lines Accepted <p-sortIcon field="totalLinesGenerated" /></th>
                 <th pSortableColumn="tabsAccepted">Tab Completions <p-sortIcon field="tabsAccepted" /></th>
                 <th pSortableColumn="requests">AI Requests <p-sortIcon field="requests" /></th>
                 <th pSortableColumn="activeDays">Active Days <p-sortIcon field="activeDays" /></th>
@@ -174,9 +176,9 @@ interface DeveloperCursorMetrics {
                   <span 
                     class="metric-value" 
                     [class.excluded]="dev.excluded"
-                    [pTooltip]="getLinesSuggestedTooltip(dev)"
+                    [pTooltip]="getLinesAcceptedTooltip(dev)"
                     tooltipPosition="top"
-                  >{{ dev.totalLinesSuggested | number }}</span>
+                  >{{ dev.totalLinesGenerated | number }}</span>
                 </td>
                 <td><span class="metric-value" [class.excluded]="dev.excluded">{{ dev.tabsAccepted | number }}</span></td>
                 <td><span class="metric-value" [class.excluded]="dev.excluded">{{ dev.requests | number }}</span></td>
@@ -1096,6 +1098,8 @@ export class CursorComponent implements OnInit, OnDestroy {
                 agentLinesSuggested: (m as any).agentLinesSuggested || 0,
                 tabLinesSuggested: (m as any).tabLinesSuggested || 0,
                 totalLinesGenerated: m.totalLinesGenerated,
+                agentLinesAccepted: (m as any).agentLinesAccepted || 0,
+                tabLinesAccepted: (m as any).tabLinesAccepted || 0,
                 acceptedLines: m.acceptedLinesAdded,
                 totalTabs: m.totalTabsShown,
                 tabsAccepted: m.totalTabsAccepted,
@@ -1241,6 +1245,12 @@ export class CursorComponent implements OnInit, OnDestroy {
   getLinesSuggestedTooltip(dev: DeveloperCursorMetrics): string {
     const agentLines = dev.agentLinesSuggested.toLocaleString();
     const tabLines = dev.tabLinesSuggested.toLocaleString();
+    return `Agent: ${agentLines}\nTab: ${tabLines}`;
+  }
+
+  getLinesAcceptedTooltip(dev: DeveloperCursorMetrics): string {
+    const agentLines = dev.agentLinesAccepted.toLocaleString();
+    const tabLines = dev.tabLinesAccepted.toLocaleString();
     return `Agent: ${agentLines}\nTab: ${tabLines}`;
   }
 
