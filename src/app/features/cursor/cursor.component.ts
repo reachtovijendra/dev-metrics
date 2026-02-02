@@ -781,6 +781,8 @@ export class CursorComponent implements OnInit, OnDestroy {
       agentLinesSuggested: 0,
       tabLinesSuggested: 0,
       totalLinesGenerated: 0,
+      agentLinesAccepted: 0,
+      tabLinesAccepted: 0,
       acceptedLines: 0,
       totalTabs: 0,
       tabsAccepted: 0,
