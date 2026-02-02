@@ -916,9 +916,9 @@ export class CursorService {
   }
 
   /**
-   * Get ALL filtered usage events by fetching pages sequentially with rate limiting
+   * Get ALL filtered usage events by fetching pages in parallel batches
    * Returns aggregated spending per user for the date range
-   * Note: API rate limit is 20 requests/minute, so we add delays between batches
+   * Uses parallel batches to speed up fetching while respecting rate limits
    * @param dateRange - The date range to fetch events for
    * @param onProgress - Optional callback for progress updates
    */
@@ -928,6 +928,8 @@ export class CursorService {
   ): Observable<UserSpendingFromEvents[]> {
     // Use larger page size to reduce number of requests
     const pageSize = 500; // Max supported by API
+    const CONCURRENT_REQUESTS = 5; // Fetch 5 pages at once
+    const BATCH_DELAY_MS = 1500; // Wait 1.5s between batches
     
     // Report initial progress
     if (onProgress) {
@@ -936,7 +938,7 @@ export class CursorService {
     
     return this.getFilteredUsageEvents(dateRange, 1, pageSize).pipe(
       switchMap(firstPage => {
-        let allEvents = [...firstPage.usageEvents];
+        const allEvents = [...firstPage.usageEvents];
         
         if (firstPage.pagination.numPages <= 1) {
           console.log('Usage events: Single page,', firstPage.totalUsageEventsCount, 'total events');
@@ -947,54 +949,71 @@ export class CursorService {
         }
 
         const totalPages = firstPage.pagination.numPages;
-        console.log(`Usage events: Need to fetch ${totalPages} pages (${firstPage.totalUsageEventsCount} events)`);
+        console.log(`Usage events: Fetching ${totalPages} pages (${firstPage.totalUsageEventsCount} events) in parallel batches of ${CONCURRENT_REQUESTS}`);
         
-        // Report initial progress
-        if (onProgress) {
-          onProgress(1, totalPages, `Page 1/${totalPages} (~3 min)`);
+        // Create array of remaining page numbers to fetch
+        const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
+        
+        // Split into batches of CONCURRENT_REQUESTS
+        const batches: number[][] = [];
+        for (let i = 0; i < remainingPages.length; i += CONCURRENT_REQUESTS) {
+          batches.push(remainingPages.slice(i, i + CONCURRENT_REQUESTS));
         }
         
-        // Fetch remaining pages sequentially with delays to avoid rate limiting
-        const fetchRemainingPages = (currentPage: number, events: UsageEvent[]): Observable<UsageEvent[]> => {
-          if (currentPage > totalPages) {
-            return of(events);
+        // Estimate time: ~2s per batch for API response + delay
+        const estimatedSeconds = batches.length * 3;
+        if (onProgress) {
+          onProgress(1, totalPages, `Page 1/${totalPages} (~${estimatedSeconds}s)`);
+        }
+        
+        // Fetch batches with delay between them
+        const fetchBatches = (batchIndex: number, accumulatedEvents: UsageEvent[]): Observable<UsageEvent[]> => {
+          if (batchIndex >= batches.length) {
+            return of(accumulatedEvents);
           }
           
-          return this.getFilteredUsageEvents(dateRange, currentPage, pageSize).pipe(
-            switchMap(response => {
-              const combined = [...events, ...response.usageEvents];
-              console.log(`Fetched page ${currentPage}/${totalPages}: ${response.usageEvents.length} events, total: ${combined.length}`);
+          const batch = batches[batchIndex];
+          const batchRequests = batch.map(page => this.getFilteredUsageEvents(dateRange, page, pageSize));
+          
+          return forkJoin(batchRequests).pipe(
+            switchMap(responses => {
+              // Combine all events from this batch
+              const batchEvents = responses.flatMap(r => r.usageEvents);
+              const combined = [...accumulatedEvents, ...batchEvents];
+              
+              const completedPages = Math.min(1 + (batchIndex + 1) * CONCURRENT_REQUESTS, totalPages);
+              console.log(`Batch ${batchIndex + 1}/${batches.length}: fetched ${batch.length} pages, total events: ${combined.length}`);
               
               // Report progress
               if (onProgress) {
-                const remainingSec = (totalPages - currentPage) * 3;
-                const remainingMin = Math.ceil(remainingSec / 60);
-                const timeMsg = remainingMin > 1 ? `~${remainingMin} min` : `~${remainingSec}s`;
-                onProgress(currentPage, totalPages, `Page ${currentPage}/${totalPages} (${timeMsg})`);
+                const remainingBatches = batches.length - batchIndex - 1;
+                const remainingSeconds = remainingBatches * 3;
+                const timeMsg = remainingSeconds > 0 ? `~${remainingSeconds}s` : 'finishing...';
+                onProgress(completedPages, totalPages, `Page ${completedPages}/${totalPages} (${timeMsg})`);
               }
               
-              if (currentPage >= totalPages) {
+              if (batchIndex >= batches.length - 1) {
                 if (onProgress) {
                   onProgress(totalPages, totalPages, 'Complete');
                 }
                 return of(combined);
               }
               
-              // Add delay before next request to respect rate limits (3 seconds between requests)
+              // Add delay before next batch to respect rate limits
               return new Observable<UsageEvent[]>(observer => {
                 setTimeout(() => {
-                  fetchRemainingPages(currentPage + 1, combined).subscribe({
+                  fetchBatches(batchIndex + 1, combined).subscribe({
                     next: result => observer.next(result),
                     error: err => observer.error(err),
                     complete: () => observer.complete()
                   });
-                }, 3000);
+                }, BATCH_DELAY_MS);
               });
             })
           );
         };
         
-        return fetchRemainingPages(2, allEvents).pipe(
+        return fetchBatches(0, allEvents).pipe(
           map(events => {
             console.log(`Usage events: Fetched ${events.length} events total`);
             if (onProgress) {
