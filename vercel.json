@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "installCommand": "NPM_TOKEN= npm install --registry=https://registry.npmjs.org/",
+  "installCommand": "rm -f ~/.npmrc && npm install --registry=https://registry.npmjs.org/",
   "buildCommand": "npm run build",
   "outputDirectory": "dist/dev-metrics/browser",
   "rewrites": [
