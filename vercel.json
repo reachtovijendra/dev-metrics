@@ -1,6 +1,7 @@
 {
   "version": 2,
-  "installCommand": "rm -f ~/.npmrc && npm install --registry=https://registry.npmjs.org/",
+  "buildCache": false,
+  "installCommand": "unset NPM_TOKEN && unset NPM_CONFIG_AUTH && unset NPM_CONFIG__AUTH && rm -f ~/.npmrc && npm cache clean --force && npm install --registry=https://registry.npmjs.org/ --no-auth",
   "buildCommand": "npm run build",
   "outputDirectory": "dist/dev-metrics/browser",
   "rewrites": [
