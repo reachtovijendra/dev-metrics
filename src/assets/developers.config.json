@@ -360,6 +360,62 @@
       "manager": "Rachel Swain",
       "department": "Database Engineering",
       "innovationTeam": "ORGN - Partner Onboarding"
+    },
+    {
+      "name": "William Weinel",
+      "username": "William.Weinel",
+      "email": "William.Weinel@acacceptance.com",
+      "manager": "Tim Powell",
+      "department": "Software Engineering",
+      "innovationTeam": ""
+    },
+    {
+      "name": "Joseph Norris",
+      "username": "Joseph.Norris",
+      "email": "Joseph.Norris@acacceptance.com",
+      "manager": "Tim Powell",
+      "department": "Software Engineering",
+      "innovationTeam": ""
+    },
+    {
+      "name": "Anandu Nair",
+      "username": "Anandu.Nair",
+      "email": "Anandu.Nair@acacceptance.com",
+      "manager": "Tim Powell",
+      "department": "Software Engineering",
+      "innovationTeam": ""
+    },
+    {
+      "name": "Jeeval Dandona",
+      "username": "Jeeval.Dandona",
+      "email": "Jeeval.Dandona@acacceptance.com",
+      "manager": "Tim Powell",
+      "department": "Software Engineering",
+      "innovationTeam": ""
+    },
+    {
+      "name": "Hamid Nazari",
+      "username": "Hamid.Nazari",
+      "email": "Hamid.Nazari@acacceptance.com",
+      "manager": "Tim Powell",
+      "department": "Software Engineering",
+      "innovationTeam": ""
+    },
+    {
+      "name": "Trevor Winn",
+      "username": "Trevor.Winn",
+      "email": "Trevor.Winn@acacceptance.com",
+      "manager": "Tim Powell",
+      "department": "Software Engineering",
+      "innovationTeam": ""
+    },
+    {
+      "name": "Anthony Humphries",
+      "username": "Anthony.Humphries",
+      "email": "Anthony.Humphries@acacceptance.com",
+      "manager": "Tim Powell",
+      "department": "Software Engineering",
+      "innovationTeam": ""
     }
   ]
 }
