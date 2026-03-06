@@ -252,18 +252,8 @@ export class MablService {
               console.log('MABL: First result sample:', JSON.stringify(first).substring(0, 1000));
             }
             
-            // Map fields if they use different names
-            const mappedResults = testResults.map((r: any) => ({
-              ...r,
-              test_name: r.test_name || r.journey_name || r.name || 'Unknown Test',
-              success: r.success ?? (r.status === 'succeeded' || r.status === 'passed'),
-              run_time: r.run_time || r.duration || r.duration_ms || 0,
-              start_time: r.start_time || r.started_at || r.created_time || Date.now(),
-              browser: r.browser || r.browser_type || 'Unknown',
-              application_name: r.application_name || r.app_name || 'Unknown App',
-              environment_name: r.environment_name || r.env_name || 'Unknown Env',
-              failure_category: r.failure_category || r.failure_reason || ''
-            }));
+            // Map fields using the shared mapping function
+            const mappedResults = testResults.map((r: any) => this.mapTestResult(r));
             
             return {
               test_results: mappedResults,
@@ -351,24 +341,108 @@ export class MablService {
       }
     }
 
-    return this.getTestRuns(dateRange, { advancedMetrics: true }).pipe(
-      map(testRuns => {
-        const metrics = this.calculateAggregatedMetrics(testRuns, dateRange);
+    return this.fetchTestRunsWithSummary(workspaceId, dateRange).pipe(
+      map(result => {
+        console.log('MABL: Building metrics from', result.testRuns.length, 'test runs');
+        console.log('MABL: API summary:', result.summary);
+        const metrics = this.calculateAggregatedMetrics(result.testRuns, dateRange, result.summary);
         this.saveToCache('aggregated', metrics, cacheParams);
         return metrics;
       })
     );
   }
 
+  private fetchTestRunsWithSummary(
+    workspaceId: string, 
+    dateRange: DateRange
+  ): Observable<{ testRuns: MablTestRun[]; summary: any }> {
+    let params = new HttpParams()
+      .set('earliest_run_start_time', dateRange.startDate.getTime().toString())
+      .set('latest_run_start_time', dateRange.endDate.getTime().toString())
+      .set('advanced_metrics', 'true')
+      .set('limit', '100');
+
+    const url = `${this.baseUrl}/results/workspace/${workspaceId}/testRuns`;
+    
+    const fetchPage = (cursor?: string, accumulated: MablTestRun[] = [], apiSummary?: any): Observable<{ testRuns: MablTestRun[]; summary: any }> => {
+      let pageParams = params;
+      if (cursor) {
+        pageParams = params.set('cursor', cursor);
+      }
+
+      return this.http.get(url, {
+        headers: this.getAuthHeaders(),
+        params: pageParams,
+        observe: 'response',
+        responseType: 'text'
+      }).pipe(
+        switchMap(response => {
+          const contentType = response.headers.get('content-type') || '';
+          if (!contentType.includes('application/json')) {
+            return of({ testRuns: accumulated, summary: apiSummary });
+          }
+
+          try {
+            const data = JSON.parse(response.body || '{}');
+            
+            // Capture summary from first page response
+            const summary = apiSummary || {
+              number_of_runs: data.number_of_runs,
+              number_of_successful_runs: data.number_of_successful_runs,
+              number_of_failed_runs: data.number_of_failed_runs
+            };
+
+            const testResults = data.test_results || [];
+            const mappedResults = testResults.map((r: any) => this.mapTestResult(r));
+            const allResults = [...accumulated, ...mappedResults];
+
+            if (data.cursor && testResults.length > 0) {
+              return fetchPage(data.cursor, allResults, summary);
+            }
+
+            return of({ testRuns: allResults, summary });
+          } catch (e) {
+            console.error('MABL: Failed to parse response:', e);
+            return of({ testRuns: accumulated, summary: apiSummary });
+          }
+        }),
+        catchError(err => {
+          console.error('MABL: Error fetching test runs:', err);
+          return of({ testRuns: accumulated, summary: apiSummary });
+        })
+      );
+    };
+
+    return fetchPage();
+  }
+
+  private mapTestResult(r: any): MablTestRun {
+    return {
+      ...r,
+      test_name: r.test_name || r.journey_name || r.name || 'Unknown Test',
+      success: r.success ?? (r.status === 'succeeded' || r.status === 'passed'),
+      run_time: r.run_time || r.duration || r.duration_ms || 0,
+      start_time: r.start_time || r.started_at || r.created_time || Date.now(),
+      browser: r.browser || r.browser_type || 'Unknown',
+      application_name: r.application_name || r.app_name || 'Unknown App',
+      environment_name: r.environment_name || r.env_name || 'Unknown Env',
+      failure_category: r.failure_category || r.failure_reason || ''
+    };
+  }
+
   private calculateAggregatedMetrics(
     testRuns: MablTestRun[],
-    dateRange: DateRange
+    dateRange: DateRange,
+    apiSummary?: any
   ): MablAggregatedMetrics {
-    const totalTestRuns = testRuns.length;
-    const passedTests = testRuns.filter(t => t.success).length;
-    const failedTests = totalTestRuns - passedTests;
+    // Use API summary if available, otherwise calculate from test runs
+    const totalTestRuns = apiSummary?.number_of_runs ?? testRuns.length;
+    const passedTests = apiSummary?.number_of_successful_runs ?? testRuns.filter(t => t.success).length;
+    const failedTests = apiSummary?.number_of_failed_runs ?? (totalTestRuns - passedTests);
     const passRate = totalTestRuns > 0 ? (passedTests / totalTestRuns) * 100 : 0;
     const failRate = totalTestRuns > 0 ? (failedTests / totalTestRuns) * 100 : 0;
+    
+    console.log('MABL: Calculated metrics - total:', totalTestRuns, 'passed:', passedTests, 'failed:', failedTests);
 
     const totalRunTime = testRuns.reduce((sum, t) => sum + (t.run_time || 0), 0);
     const averageRunTime = totalTestRuns > 0 ? totalRunTime / totalTestRuns : 0;
