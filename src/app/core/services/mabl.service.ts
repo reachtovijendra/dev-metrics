@@ -242,12 +242,31 @@ export class MablService {
             
             // Log first result structure for debugging
             if (testResults.length > 0) {
-              console.log('MABL: First test result keys:', Object.keys(testResults[0]));
-              console.log('MABL: First test result sample:', JSON.stringify(testResults[0]).substring(0, 500));
+              const first = testResults[0];
+              console.log('MABL: First test result keys:', Object.keys(first));
+              console.log('MABL: First result - test_name:', first.test_name, 'journey_name:', first.journey_name, 'name:', first.name);
+              console.log('MABL: First result - success:', first.success, 'status:', first.status);
+              console.log('MABL: First result - run_time:', first.run_time, 'duration:', first.duration, 'duration_ms:', first.duration_ms);
+              console.log('MABL: First result - start_time:', first.start_time, 'started_at:', first.started_at);
+              console.log('MABL: First result - browser:', first.browser, 'browser_type:', first.browser_type);
+              console.log('MABL: First result sample:', JSON.stringify(first).substring(0, 1000));
             }
             
+            // Map fields if they use different names
+            const mappedResults = testResults.map((r: any) => ({
+              ...r,
+              test_name: r.test_name || r.journey_name || r.name || 'Unknown Test',
+              success: r.success ?? (r.status === 'succeeded' || r.status === 'passed'),
+              run_time: r.run_time || r.duration || r.duration_ms || 0,
+              start_time: r.start_time || r.started_at || r.created_time || Date.now(),
+              browser: r.browser || r.browser_type || 'Unknown',
+              application_name: r.application_name || r.app_name || 'Unknown App',
+              environment_name: r.environment_name || r.env_name || 'Unknown Env',
+              failure_category: r.failure_category || r.failure_reason || ''
+            }));
+            
             return {
-              test_results: testResults,
+              test_results: mappedResults,
               cursor: data.cursor,
               summary: data.summary
             } as MablTestRunsResponse;
