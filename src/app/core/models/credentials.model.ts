@@ -14,10 +14,16 @@ export interface JiraCredentials {
   apiToken: string;
 }
 
+export interface MablCredentials {
+  workspaceId: string;
+  apiKey: string;
+}
+
 export interface AllCredentials {
   bitbucket?: BitbucketCredentials;
   cursor?: CursorCredentials;
   jira?: JiraCredentials;
+  mabl?: MablCredentials;
 }
 
 

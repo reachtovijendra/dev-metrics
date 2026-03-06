@@ -13,8 +13,9 @@ import { CredentialsService } from '../../core/services/credentials.service';
 import { BitbucketService } from '../../core/services/bitbucket.service';
 import { CursorService } from '../../core/services/cursor.service';
 import { JiraService } from '../../core/services/jira.service';
+import { MablService } from '../../core/services/mabl.service';
 import { PageHeaderService } from '../../core/services/page-header.service';
-import { BitbucketCredentials, CursorCredentials, JiraCredentials } from '../../core/models/credentials.model';
+import { BitbucketCredentials, CursorCredentials, JiraCredentials, MablCredentials } from '../../core/models/credentials.model';
 
 @Component({
   selector: 'app-settings',
@@ -213,6 +214,64 @@ import { BitbucketCredentials, CursorCredentials, JiraCredentials } from '../../
             />
           </div>
         </p-card>
+
+        <!-- MABL -->
+        <p-card styleClass="settings-card">
+          <ng-template pTemplate="header">
+            <div class="card-header">
+              <div class="header-info">
+                <i class="pi pi-bolt"></i>
+                <span>MABL Test Automation</span>
+              </div>
+              <p-tag 
+                [value]="credentialsService.hasMablCredentials() ? 'Connected' : 'Not Connected'"
+                [severity]="credentialsService.hasMablCredentials() ? 'success' : 'danger'"
+              />
+            </div>
+          </ng-template>
+
+          <div class="form-group">
+            <label for="mabl-workspace">Workspace ID</label>
+            <input 
+              pInputText 
+              id="mabl-workspace" 
+              [(ngModel)]="mablForm.workspaceId"
+              placeholder="Your MABL Workspace ID"
+              class="w-full"
+            />
+            <small class="hint">Find your Workspace ID in MABL Settings</small>
+          </div>
+
+          <div class="form-group">
+            <label for="mabl-key">API Key</label>
+            <p-password 
+              id="mabl-key" 
+              [(ngModel)]="mablForm.apiKey"
+              placeholder="Your MABL API Key"
+              [toggleMask]="true"
+              [feedback]="false"
+              styleClass="w-full"
+            />
+            <small class="hint">
+              Create a <strong>Viewer</strong> type key at <a href="https://app.mabl.com/workspaces/-/settings/apis" target="_blank">MABL Settings > APIs</a>
+            </small>
+          </div>
+
+          <div class="card-actions">
+            <p-button 
+              label="Test Connection" 
+              icon="pi pi-check-circle" 
+              [outlined]="true"
+              [loading]="testingMabl()"
+              (onClick)="testMablConnection()"
+            />
+            <p-button 
+              label="Save" 
+              icon="pi pi-save"
+              (onClick)="saveMablCredentials()"
+            />
+          </div>
+        </p-card>
       </div>
 
       <p-divider />
@@ -375,6 +434,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private bitbucketService = inject(BitbucketService);
   private cursorService = inject(CursorService);
   private jiraService = inject(JiraService);
+  private mablService = inject(MablService);
   private messageService = inject(MessageService);
   private pageHeaderService = inject(PageHeaderService);
 
@@ -390,6 +450,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   testingBitbucket = signal(false);
   testingCursor = signal(false);
   testingJira = signal(false);
+  testingMabl = signal(false);
 
   bitbucketForm: BitbucketCredentials = {
     serverUrl: 'https://acapgit.acacceptance.com',
@@ -407,6 +468,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
     apiToken: ''
   };
 
+  mablForm: MablCredentials = {
+    workspaceId: '',
+    apiKey: ''
+  };
+
   constructor() {
     // Load existing credentials
     const bbCreds = this.credentialsService.getBitbucketCredentials();
@@ -422,6 +488,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
     const jiraCreds = this.credentialsService.getJiraCredentials();
     if (jiraCreds) {
       this.jiraForm = { ...jiraCreds };
+    }
+
+    const mablCreds = this.credentialsService.getMablCredentials();
+    if (mablCreds) {
+      this.mablForm = { ...mablCreds };
     }
   }
 
@@ -476,6 +547,24 @@ export class SettingsComponent implements OnInit, OnDestroy {
       severity: 'success',
       summary: 'Saved',
       detail: 'JIRA credentials saved successfully'
+    });
+  }
+
+  saveMablCredentials(): void {
+    if (!this.mablForm.workspaceId || !this.mablForm.apiKey) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation Error',
+        detail: 'Please fill in all MABL fields'
+      });
+      return;
+    }
+
+    this.credentialsService.setMablCredentials(this.mablForm);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Saved',
+      detail: 'MABL credentials saved successfully'
     });
   }
 
@@ -575,11 +664,44 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
   }
 
+  async testMablConnection(): Promise<void> {
+    this.testingMabl.set(true);
+    this.saveMablCredentials();
+
+    this.mablService.testConnection().subscribe({
+      next: (success) => {
+        this.testingMabl.set(false);
+        if (success) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Connection Successful',
+            detail: 'Successfully connected to MABL API'
+          });
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Connection Failed',
+            detail: 'Could not connect to MABL. Please check your credentials.'
+          });
+        }
+      },
+      error: () => {
+        this.testingMabl.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Connection Failed',
+          detail: 'Could not connect to MABL. Please check your credentials.'
+        });
+      }
+    });
+  }
+
   clearAllCredentials(): void {
     this.credentialsService.clearAllCredentials();
     this.bitbucketForm = { serverUrl: '', username: '', password: '' };
     this.cursorForm = { apiKey: '' };
     this.jiraForm = { domain: '', email: '', apiToken: '' };
+    this.mablForm = { workspaceId: '', apiKey: '' };
     
     this.messageService.add({
       severity: 'info',

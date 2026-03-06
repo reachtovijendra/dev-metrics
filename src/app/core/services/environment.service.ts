@@ -50,6 +50,15 @@ export class EnvironmentService {
   }
 
   /**
+   * Get the appropriate base URL for MABL API
+   * - Development: /mabl-api (uses proxy.conf.json + local credentials)
+   * - Production: /api/mabl (uses Vercel serverless function)
+   */
+  getMablApiUrl(): string {
+    return this.isProduction() ? '/api/mabl' : '/mabl-api';
+  }
+
+  /**
    * Check if authentication should be handled client-side
    * In production, the serverless functions handle auth
    */

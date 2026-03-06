@@ -28,6 +28,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/jira/jira.component').then(m => m.JiraComponent)
       },
       {
+        path: 'mabl',
+        loadComponent: () => import('./features/mabl/mabl.component').then(m => m.MablComponent)
+      },
+      {
         path: 'developers',
         loadComponent: () => import('./features/developers/developers.component').then(m => m.DevelopersComponent)
       },

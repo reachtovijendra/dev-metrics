@@ -1,5 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { AllCredentials, BitbucketCredentials, CursorCredentials, JiraCredentials } from '../models/credentials.model';
+import { AllCredentials, BitbucketCredentials, CursorCredentials, JiraCredentials, MablCredentials } from '../models/credentials.model';
 
 const STORAGE_KEY = 'dev_metrics_credentials';
 
@@ -12,8 +12,9 @@ export class CredentialsService {
   readonly hasBitbucketCredentials = computed(() => !!this.credentials().bitbucket);
   readonly hasCursorCredentials = computed(() => !!this.credentials().cursor);
   readonly hasJiraCredentials = computed(() => !!this.credentials().jira);
+  readonly hasMablCredentials = computed(() => !!this.credentials().mabl);
   readonly hasAnyCredentials = computed(() => 
-    this.hasBitbucketCredentials() || this.hasCursorCredentials() || this.hasJiraCredentials()
+    this.hasBitbucketCredentials() || this.hasCursorCredentials() || this.hasJiraCredentials() || this.hasMablCredentials()
   );
 
   private loadFromStorage(): AllCredentials {
@@ -48,6 +49,10 @@ export class CredentialsService {
     return this.credentials().jira;
   }
 
+  getMablCredentials(): MablCredentials | undefined {
+    return this.credentials().mabl;
+  }
+
   setBitbucketCredentials(creds: BitbucketCredentials): void {
     this.credentials.update(c => ({ ...c, bitbucket: creds }));
     this.saveToStorage();
@@ -60,6 +65,11 @@ export class CredentialsService {
 
   setJiraCredentials(creds: JiraCredentials): void {
     this.credentials.update(c => ({ ...c, jira: creds }));
+    this.saveToStorage();
+  }
+
+  setMablCredentials(creds: MablCredentials): void {
+    this.credentials.update(c => ({ ...c, mabl: creds }));
     this.saveToStorage();
   }
 
@@ -82,6 +92,14 @@ export class CredentialsService {
   clearJiraCredentials(): void {
     this.credentials.update(c => {
       const { jira, ...rest } = c;
+      return rest;
+    });
+    this.saveToStorage();
+  }
+
+  clearMablCredentials(): void {
+    this.credentials.update(c => {
+      const { mabl, ...rest } = c;
       return rest;
     });
     this.saveToStorage();

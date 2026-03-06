@@ -29,6 +29,28 @@ const PROXY_CONFIG = {
     onProxyRes: function(proxyRes, req, res) {
       delete proxyRes.headers['www-authenticate'];
     }
+  },
+  "/mabl-api": {
+    target: "https://api.mabl.com",
+    secure: true,
+    changeOrigin: true,
+    pathRewrite: {
+      "^/mabl-api": ""
+    },
+    logLevel: "debug",
+    onProxyReq: function(proxyReq, req, res) {
+      console.log('[MABL Proxy] Request:', req.method, proxyReq.path);
+      if (req.headers.authorization) {
+        proxyReq.setHeader('Authorization', req.headers.authorization);
+      }
+    },
+    onProxyRes: function(proxyRes, req, res) {
+      console.log('[MABL Proxy] Response:', proxyRes.statusCode);
+      delete proxyRes.headers['www-authenticate'];
+    },
+    onError: function(err, req, res) {
+      console.error('[MABL Proxy] ERROR:', err.code, err.message);
+    }
   }
 };
 

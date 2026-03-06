@@ -11,6 +11,7 @@ export interface DeveloperMetrics {
   bitbucket?: BitbucketMetrics;
   cursor?: CursorMetrics;
   jira?: JiraMetrics;
+  mabl?: MablMetrics;
 }
 
 export interface BitbucketMetrics {
@@ -46,6 +47,14 @@ export interface JiraMetrics {
   avgResolutionTimeHours: number;
   ticketsInProgress: number;
   ticketsBlocked: number;
+}
+
+export interface MablMetrics {
+  testsCreated: number;
+  testsModified: number;
+  testsOwned: number;
+  ownedTestsPassRate: number;
+  activityScore: number;
 }
 
 export interface MetricsSummary {

@@ -62,6 +62,10 @@ interface NavItem {
             <i class="pi pi-ticket"></i>
             <span>JIRA</span>
           </div>
+          <div class="status-item" [class.connected]="credentialsService.hasMablCredentials()">
+            <i class="pi pi-bolt"></i>
+            <span>MABL</span>
+          </div>
         </div>
         
         <button 
@@ -231,6 +235,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     { label: 'Bitbucket', icon: 'pi-github', route: '/bitbucket' },
     { label: 'Cursor AI', icon: 'pi-sparkles', route: '/cursor' },
     { label: 'JIRA', icon: 'pi-ticket', route: '/jira' },
+    { label: 'MABL', icon: 'pi-bolt', route: '/mabl' },
     { label: 'Developers', icon: 'pi-users', route: '/developers' }
     // Settings hidden from nav - access via direct URL /settings
   ];
