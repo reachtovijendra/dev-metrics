@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of, forkJoin } from 'rxjs';
-import { map, catchError, tap, switchMap } from 'rxjs/operators';
+import { Observable, of, forkJoin, timer, throwError } from 'rxjs';
+import { map, catchError, tap, switchMap, retry } from 'rxjs/operators';
 import { CredentialsService } from './credentials.service';
 import { EnvironmentService } from './environment.service';
 import {
@@ -103,6 +103,10 @@ interface CachedCursorData {
   endDate: string;
 }
 
+const USAGE_EVENT_PAGE_SIZE = 500;
+const USAGE_EVENT_BATCH_DELAY_MS = 3000;
+const USAGE_EVENT_MAX_RETRIES = 4;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -118,6 +122,25 @@ export class CursorService {
   
   private readonly CACHE_KEY = 'cursor_metrics_cache';
   private readonly CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+  private retryRateLimit<T>(context: string) {
+    return retry<T>({
+      count: USAGE_EVENT_MAX_RETRIES,
+      delay: (error, retryCount) => {
+        if (error?.status !== 429) {
+          return throwError(() => error);
+        }
+
+        const retryAfterSeconds = Number(error?.headers?.get?.('Retry-After'));
+        const delayMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+          ? retryAfterSeconds * 1000
+          : USAGE_EVENT_BATCH_DELAY_MS * retryCount;
+
+        console.warn(`Cursor API rate-limited ${context}. Retrying in ${delayMs}ms.`);
+        return timer(delayMs);
+      }
+    });
+  }
 
   /**
    * Get team members from Cursor Admin API
@@ -154,6 +177,7 @@ export class CursorService {
       `${this.baseUrl}/teams/daily-usage-data`,
       request
     ).pipe(
+      this.retryRateLimit<CursorDailyUsageResponse>('daily usage'),
       tap(response => {
         console.log('=== DAILY USAGE API RESPONSE ===');
         console.log('Total records:', response.data?.length || 0);
@@ -451,6 +475,7 @@ export class CursorService {
       `${this.baseUrl}/teams/spend`,
       request
     ).pipe(
+      this.retryRateLimit<CursorSpendingResponse>('spending data'),
       catchError(err => {
         console.error('Error fetching spending data:', err);
         return of({
@@ -561,6 +586,7 @@ export class CursorService {
       `${this.baseUrl}/analytics/team/leaderboard`,
       { params }
     ).pipe(
+      this.retryRateLimit<AnalyticsLeaderboardResponse>('analytics leaderboard'),
       tap(response => {
         console.log('=== ANALYTICS API LEADERBOARD RESPONSE ===');
         console.log('Raw response:', response);
@@ -645,6 +671,7 @@ export class CursorService {
       `${this.baseUrl}/analytics/by-user/models`,
       { params }
     ).pipe(
+      this.retryRateLimit<ModelUsageByUserResponse>('model usage'),
       catchError(err => {
         console.warn('Model usage API error:', err);
         return of({
@@ -887,6 +914,7 @@ export class CursorService {
       `${this.baseUrl}/teams/filtered-usage-events`,
       request
     ).pipe(
+      this.retryRateLimit<FilteredUsageEventsResponse>(`usage events page ${page}`),
       tap(response => {
         if (page === 1) {
           console.log('=== FILTERED USAGE EVENTS RESPONSE ===');
@@ -916,9 +944,9 @@ export class CursorService {
   }
 
   /**
-   * Get ALL filtered usage events by fetching pages in parallel batches
+   * Get ALL filtered usage events by fetching pages sequentially
    * Returns aggregated spending per user for the date range
-   * Uses parallel batches to speed up fetching while respecting rate limits
+   * Uses a short delay between requests and retries 429 responses.
    * @param dateRange - The date range to fetch events for
    * @param onProgress - Optional callback for progress updates
    */
@@ -927,9 +955,8 @@ export class CursorService {
     onProgress?: (current: number, total: number, message: string) => void
   ): Observable<UserSpendingFromEvents[]> {
     // Use larger page size to reduce number of requests
-    const pageSize = 500; // Max supported by API
-    const CONCURRENT_REQUESTS = 5; // Fetch 5 pages at once
-    const BATCH_DELAY_MS = 1500; // Wait 1.5s between batches
+    const pageSize = USAGE_EVENT_PAGE_SIZE; // Max supported by API
+    const BATCH_DELAY_MS = USAGE_EVENT_BATCH_DELAY_MS;
     
     // Report initial progress
     if (onProgress) {
@@ -949,71 +976,45 @@ export class CursorService {
         }
 
         const totalPages = firstPage.pagination.numPages;
-        console.log(`Usage events: Fetching ${totalPages} pages (${firstPage.totalUsageEventsCount} events) in parallel batches of ${CONCURRENT_REQUESTS}`);
-        
-        // Create array of remaining page numbers to fetch
-        const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
-        
-        // Split into batches of CONCURRENT_REQUESTS
-        const batches: number[][] = [];
-        for (let i = 0; i < remainingPages.length; i += CONCURRENT_REQUESTS) {
-          batches.push(remainingPages.slice(i, i + CONCURRENT_REQUESTS));
-        }
-        
-        // Estimate time: ~2s per batch for API response + delay
-        const estimatedSeconds = batches.length * 3;
+
+        console.log(`Usage events: Fetching ${totalPages} pages (${firstPage.totalUsageEventsCount} events) sequentially with ${BATCH_DELAY_MS}ms delay`);
+
+        const estimatedSeconds = (totalPages - 1) * (BATCH_DELAY_MS / 1000);
         if (onProgress) {
           onProgress(1, totalPages, `Page 1/${totalPages} (~${estimatedSeconds}s)`);
         }
-        
-        // Fetch batches with delay between them
-        const fetchBatches = (batchIndex: number, accumulatedEvents: UsageEvent[]): Observable<UsageEvent[]> => {
-          if (batchIndex >= batches.length) {
+
+        const fetchNextPage = (page: number, accumulatedEvents: UsageEvent[]): Observable<UsageEvent[]> => {
+          if (page > totalPages) {
             return of(accumulatedEvents);
           }
-          
-          const batch = batches[batchIndex];
-          const batchRequests = batch.map(page => this.getFilteredUsageEvents(dateRange, page, pageSize));
-          
-          return forkJoin(batchRequests).pipe(
-            switchMap(responses => {
-              // Combine all events from this batch
-              const batchEvents = responses.flatMap(r => r.usageEvents);
-              const combined = [...accumulatedEvents, ...batchEvents];
-              
-              const completedPages = Math.min(1 + (batchIndex + 1) * CONCURRENT_REQUESTS, totalPages);
-              console.log(`Batch ${batchIndex + 1}/${batches.length}: fetched ${batch.length} pages, total events: ${combined.length}`);
-              
-              // Report progress
+
+          return timer(BATCH_DELAY_MS).pipe(
+            switchMap(() => this.getFilteredUsageEvents(dateRange, page, pageSize)),
+            switchMap(response => {
+              const combined = [...accumulatedEvents, ...response.usageEvents];
+              console.log(`Usage events: fetched page ${page}/${totalPages}, total events: ${combined.length}`);
+
               if (onProgress) {
-                const remainingBatches = batches.length - batchIndex - 1;
-                const remainingSeconds = remainingBatches * 3;
+                const remainingPages = totalPages - page;
+                const remainingSeconds = remainingPages * (BATCH_DELAY_MS / 1000);
                 const timeMsg = remainingSeconds > 0 ? `~${remainingSeconds}s` : 'finishing...';
-                onProgress(completedPages, totalPages, `Page ${completedPages}/${totalPages} (${timeMsg})`);
+                onProgress(page, totalPages, `Page ${page}/${totalPages} (${timeMsg})`);
               }
-              
-              if (batchIndex >= batches.length - 1) {
+
+              if (page >= totalPages) {
                 if (onProgress) {
                   onProgress(totalPages, totalPages, 'Complete');
                 }
                 return of(combined);
               }
-              
-              // Add delay before next batch to respect rate limits
-              return new Observable<UsageEvent[]>(observer => {
-                setTimeout(() => {
-                  fetchBatches(batchIndex + 1, combined).subscribe({
-                    next: result => observer.next(result),
-                    error: err => observer.error(err),
-                    complete: () => observer.complete()
-                  });
-                }, BATCH_DELAY_MS);
-              });
+
+              return fetchNextPage(page + 1, combined);
             })
           );
         };
         
-        return fetchBatches(0, allEvents).pipe(
+        return fetchNextPage(2, allEvents).pipe(
           map(events => {
             console.log(`Usage events: Fetched ${events.length} events total`);
             if (onProgress) {

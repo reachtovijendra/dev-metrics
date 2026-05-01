@@ -4,6 +4,11 @@ export interface BitbucketCredentials {
   password: string;
 }
 
+export interface GithubCredentials {
+  organization: string;
+  token: string;
+}
+
 export interface CursorCredentials {
   apiKey: string;
 }
@@ -21,6 +26,7 @@ export interface MablCredentials {
 
 export interface AllCredentials {
   bitbucket?: BitbucketCredentials;
+  github?: GithubCredentials;
   cursor?: CursorCredentials;
   jira?: JiraCredentials;
   mabl?: MablCredentials;

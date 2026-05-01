@@ -1,7 +1,6 @@
 import { Component, inject, signal, OnInit, OnDestroy, computed, effect, untracked, Injector } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { ChartModule } from 'primeng/chart';
@@ -50,7 +49,6 @@ interface DeveloperCursorMetrics {
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
     CardModule,
     TableModule,
     ChartModule,
@@ -93,6 +91,16 @@ interface DeveloperCursorMetrics {
           <p>Configure your Cursor Admin API key in Settings to view AI metrics.</p>
         </div>
       } @else {
+        @if (cursorWarning()) {
+          <div class="cursor-warning">
+            <i class="pi pi-exclamation-triangle"></i>
+            <div>
+              <strong>Cursor API rate-limit protection is active.</strong>
+              <p>{{ cursorWarning() }}</p>
+            </div>
+          </div>
+        }
+
         <!-- KPI Summary -->
         <div class="metrics-grid">
           <app-metric-card
@@ -216,6 +224,30 @@ interface DeveloperCursorMetrics {
       gap: 1rem;
       margin-bottom: 1.5rem;
       flex-wrap: wrap;
+    }
+
+    .cursor-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.8rem;
+      margin-bottom: 1rem;
+      padding: 1rem 1.1rem;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 16px;
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--text-color);
+    }
+
+    .cursor-warning i {
+      margin-top: 0.15rem;
+      color: #f59e0b;
+      font-size: 1.15rem;
+    }
+
+    .cursor-warning p {
+      margin: 0.25rem 0 0;
+      color: var(--text-color-secondary);
+      line-height: 1.45;
     }
 
     .segmented-control {
@@ -585,6 +617,7 @@ export class CursorComponent implements OnInit, OnDestroy {
   loading = signal(false);
   spendingLoading = signal(false);
   spendingProgress = signal({ current: 0, total: 0, message: '' });
+  cursorWarning = signal<string | null>(null);
 
   // Store user's custom date range (to restore when switching back from billing cycle)
   private userDateRange: Date[] = [...this.pageHeaderService.dateRange()];
@@ -831,6 +864,7 @@ export class CursorComponent implements OnInit, OnDestroy {
 
     this.loading.set(true);
     this.pageHeaderService.setLoading(true);
+    this.cursorWarning.set(null);
     
     // Clear current data while loading to show user that data is being refreshed
     this.developers = [];
@@ -909,6 +943,13 @@ export class CursorComponent implements OnInit, OnDestroy {
           dateRange,
           (current, total, message) => {
             this.spendingProgress.set({ current, total, message });
+            if (total > 12 && message !== 'Complete') {
+              this.cursorWarning.set(
+                'Fetching all Cursor usage-event pages sequentially with a short delay to avoid 429 rate limits. Large date ranges may take several minutes.'
+              );
+            } else if (message === 'Complete') {
+              this.cursorWarning.set(null);
+            }
           }
         );
         
@@ -936,7 +977,9 @@ export class CursorComponent implements OnInit, OnDestroy {
           next: ({ summary, analyticsMetrics, adminMetrics, billingCycleMetrics, usageEventsSpending }) => {
             // Clear spending loading state
             this.spendingLoading.set(false);
-            this.spendingProgress.set({ current: 0, total: 0, message: '' });
+            if (!this.cursorWarning()) {
+              this.spendingProgress.set({ current: 0, total: 0, message: '' });
+            }
             // === COMPARISON LOGGING ===
             console.log('=== ANALYTICS vs ADMIN API COMPARISON ===');
             console.log('Date Range:', this.formatDate(dateRange.startDate), 'to', this.formatDate(dateRange.endDate));

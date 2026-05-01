@@ -7,6 +7,7 @@
     { "source": "/api/cursor/:path*", "destination": "/api/cursor" },
     { "source": "/api/jira/:path*", "destination": "/api/jira" },
     { "source": "/api/bitbucket/:path*", "destination": "/api/bitbucket" },
+    { "source": "/api/github/:path*", "destination": "/api/github" },
     { "source": "/api/mabl/:path*", "destination": "/api/mabl" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]

@@ -54,6 +54,10 @@ interface NavItem {
             <i class="pi pi-server"></i>
             <span>Bitbucket</span>
           </div>
+          <div class="status-item" [class.connected]="credentialsService.hasGithubCredentials()">
+            <i class="pi pi-github"></i>
+            <span>GitHub</span>
+          </div>
           <div class="status-item" [class.connected]="credentialsService.hasCursorCredentials()">
             <i class="pi pi-code"></i>
             <span>Cursor</span>
@@ -233,10 +237,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
   navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'pi-home', route: '/dashboard' },
     { label: 'Bitbucket', icon: 'pi-github', route: '/bitbucket' },
+    { label: 'GitHub', icon: 'pi-code', route: '/github' },
     { label: 'Cursor AI', icon: 'pi-sparkles', route: '/cursor' },
     { label: 'JIRA', icon: 'pi-ticket', route: '/jira' },
     { label: 'MABL', icon: 'pi-bolt', route: '/mabl' },
-    { label: 'Developers', icon: 'pi-users', route: '/developers' }
+    { label: 'Developers', icon: 'pi-users', route: '/developers' },
+    { label: 'Manage Developers', icon: 'pi-shield', route: '/admin' }
     // Settings hidden from nav - access via direct URL /settings
   ];
 

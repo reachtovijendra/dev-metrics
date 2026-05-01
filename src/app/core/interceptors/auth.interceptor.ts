@@ -37,6 +37,18 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
         }
       });
     }
+  } else if (req.url.includes('/github-api') || req.url.includes('api.github.com')) {
+    // GitHub REST API (via proxy or direct)
+    const githubCreds = credentialsService.getGithubCredentials();
+    if (githubCreds?.token) {
+      modifiedReq = req.clone({
+        setHeaders: {
+          'Authorization': `Bearer ${githubCreds.token}`,
+          'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      });
+    }
   } else if (req.url.includes('/cursor-api') || req.url.includes('api.cursor.com')) {
     // Cursor Admin API (via proxy or direct)
     const cursorCreds = credentialsService.getCursorCredentials();

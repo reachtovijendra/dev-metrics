@@ -11,11 +11,12 @@ import { TagModule } from 'primeng/tag';
 import { MessageService } from 'primeng/api';
 import { CredentialsService } from '../../core/services/credentials.service';
 import { BitbucketService } from '../../core/services/bitbucket.service';
+import { GithubService } from '../../core/services/github.service';
 import { CursorService } from '../../core/services/cursor.service';
 import { JiraService } from '../../core/services/jira.service';
 import { MablService } from '../../core/services/mabl.service';
 import { PageHeaderService } from '../../core/services/page-header.service';
-import { BitbucketCredentials, CursorCredentials, JiraCredentials, MablCredentials } from '../../core/models/credentials.model';
+import { BitbucketCredentials, CursorCredentials, GithubCredentials, JiraCredentials, MablCredentials } from '../../core/models/credentials.model';
 
 @Component({
   selector: 'app-settings',
@@ -96,6 +97,62 @@ import { BitbucketCredentials, CursorCredentials, JiraCredentials, MablCredentia
               label="Save" 
               icon="pi pi-save"
               (onClick)="saveBitbucketCredentials()"
+            />
+          </div>
+        </p-card>
+
+        <!-- GitHub -->
+        <p-card styleClass="settings-card">
+          <ng-template pTemplate="header">
+            <div class="card-header">
+              <div class="header-info">
+                <i class="pi pi-github"></i>
+                <span>GitHub</span>
+              </div>
+              <p-tag
+                [value]="credentialsService.hasGithubCredentials() ? 'Connected' : 'Not Connected'"
+                [severity]="credentialsService.hasGithubCredentials() ? 'success' : 'danger'"
+              />
+            </div>
+          </ng-template>
+
+          <div class="form-group">
+            <label for="github-org">Organization</label>
+            <input
+              pInputText
+              id="github-org"
+              [(ngModel)]="githubForm.organization"
+              placeholder="your-github-org"
+              class="w-full"
+            />
+            <small class="hint">Use the organization slug from github.com/organization.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="github-token">Personal Access Token</label>
+            <p-password
+              id="github-token"
+              [(ngModel)]="githubForm.token"
+              placeholder="GitHub personal access token"
+              [toggleMask]="true"
+              [feedback]="false"
+              styleClass="w-full"
+            />
+            <small class="hint">Token needs access to read organization repositories and pull requests.</small>
+          </div>
+
+          <div class="card-actions">
+            <p-button
+              label="Test Connection"
+              icon="pi pi-check-circle"
+              [outlined]="true"
+              [loading]="testingGithub()"
+              (onClick)="testGithubConnection()"
+            />
+            <p-button
+              label="Save"
+              icon="pi pi-save"
+              (onClick)="saveGithubCredentials()"
             />
           </div>
         </p-card>
@@ -432,6 +489,7 @@ import { BitbucketCredentials, CursorCredentials, JiraCredentials, MablCredentia
 export class SettingsComponent implements OnInit, OnDestroy {
   credentialsService = inject(CredentialsService);
   private bitbucketService = inject(BitbucketService);
+  private githubService = inject(GithubService);
   private cursorService = inject(CursorService);
   private jiraService = inject(JiraService);
   private mablService = inject(MablService);
@@ -448,6 +506,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   testingBitbucket = signal(false);
+  testingGithub = signal(false);
   testingCursor = signal(false);
   testingJira = signal(false);
   testingMabl = signal(false);
@@ -456,6 +515,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
     serverUrl: 'https://acapgit.acacceptance.com',
     username: '',
     password: ''
+  };
+
+  githubForm: GithubCredentials = {
+    organization: '',
+    token: ''
   };
 
   cursorForm: CursorCredentials = {
@@ -478,6 +542,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
     const bbCreds = this.credentialsService.getBitbucketCredentials();
     if (bbCreds) {
       this.bitbucketForm = { ...bbCreds };
+    }
+
+    const githubCreds = this.credentialsService.getGithubCredentials();
+    if (githubCreds) {
+      this.githubForm = { ...githubCreds };
     }
 
     const cursorCreds = this.credentialsService.getCursorCredentials();
@@ -511,6 +580,24 @@ export class SettingsComponent implements OnInit, OnDestroy {
       severity: 'success',
       summary: 'Saved',
       detail: 'Bitbucket credentials saved successfully'
+    });
+  }
+
+  saveGithubCredentials(): void {
+    if (!this.githubForm.organization || !this.githubForm.token) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation Error',
+        detail: 'Please fill in all GitHub fields'
+      });
+      return;
+    }
+
+    this.credentialsService.setGithubCredentials(this.githubForm);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Saved',
+      detail: 'GitHub credentials saved successfully'
     });
   }
 
@@ -595,6 +682,38 @@ export class SettingsComponent implements OnInit, OnDestroy {
           severity: 'error',
           summary: 'Connection Failed',
           detail: 'Could not connect to Bitbucket. Please check your credentials.'
+        });
+      }
+    });
+  }
+
+  async testGithubConnection(): Promise<void> {
+    this.testingGithub.set(true);
+    this.saveGithubCredentials();
+
+    this.githubService.testConnection().subscribe({
+      next: (success) => {
+        this.testingGithub.set(false);
+        if (success) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Connection Successful',
+            detail: 'Successfully connected to GitHub'
+          });
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Connection Failed',
+            detail: 'Could not connect to GitHub. Please check your organization and token.'
+          });
+        }
+      },
+      error: () => {
+        this.testingGithub.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Connection Failed',
+          detail: 'Could not connect to GitHub. Please check your organization and token.'
         });
       }
     });
@@ -699,6 +818,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   clearAllCredentials(): void {
     this.credentialsService.clearAllCredentials();
     this.bitbucketForm = { serverUrl: '', username: '', password: '' };
+    this.githubForm = { organization: '', token: '' };
     this.cursorForm = { apiKey: '' };
     this.jiraForm = { domain: '', email: '', apiToken: '' };
     this.mablForm = { workspaceId: '', apiKey: '' };

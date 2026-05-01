@@ -50,6 +50,15 @@ export class EnvironmentService {
   }
 
   /**
+   * Get the appropriate base URL for GitHub API
+   * - Development: /github-api (uses proxy.conf.js + local credentials)
+   * - Production: /api/github (uses Vercel serverless function)
+   */
+  getGithubApiUrl(): string {
+    return this.isProduction() ? '/api/github' : '/github-api';
+  }
+
+  /**
    * Get the appropriate base URL for MABL API
    * - Development: /mabl-api (uses proxy.conf.json + local credentials)
    * - Production: /api/mabl (uses Vercel serverless function)

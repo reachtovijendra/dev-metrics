@@ -20,6 +20,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/bitbucket/bitbucket.component').then(m => m.BitbucketComponent)
       },
       {
+        path: 'github',
+        loadComponent: () => import('./features/github/github.component').then(m => m.GithubComponent)
+      },
+      {
+        path: 'github/developer/:githubUsername',
+        loadComponent: () => import('./features/github/github-developer-detail.component').then(m => m.GithubDeveloperDetailComponent)
+      },
+      {
         path: 'cursor',
         loadComponent: () => import('./features/cursor/cursor.component').then(m => m.CursorComponent)
       },
@@ -34,6 +42,10 @@ export const routes: Routes = [
       {
         path: 'developers',
         loadComponent: () => import('./features/developers/developers.component').then(m => m.DevelopersComponent)
+      },
+      {
+        path: 'admin',
+        loadComponent: () => import('./features/admin/admin.component').then(m => m.AdminComponent)
       },
       {
         path: 'settings',

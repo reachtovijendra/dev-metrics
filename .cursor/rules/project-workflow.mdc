@@ -1,0 +1,11 @@
+---
+description: Project workflow for commits and deployments
+alwaysApply: true
+---
+
+# Project Workflow
+
+- This project uses direct pushes to `main`; do not require feature branches for routine changes.
+- This project does not use JIRA ticket IDs for commit messages unless the user explicitly provides one.
+- Pushing to `main` is expected to trigger the configured Vercel deployment automatically.
+- There are no separate deployment environments for normal workflow; treat `main` as the deployable branch.
