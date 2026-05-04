@@ -4,11 +4,11 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/dev-metrics/browser",
   "rewrites": [
-    { "source": "/api/cursor/:path*", "destination": "/api/cursor" },
-    { "source": "/api/jira/:path*", "destination": "/api/jira" },
-    { "source": "/api/bitbucket/:path*", "destination": "/api/bitbucket" },
-    { "source": "/api/github/:path*", "destination": "/api/github" },
-    { "source": "/api/mabl/:path*", "destination": "/api/mabl" },
+    { "source": "/api/cursor/:path*", "destination": "/api/cursor?path=:path*" },
+    { "source": "/api/jira/:path*", "destination": "/api/jira?path=:path*" },
+    { "source": "/api/bitbucket/:path*", "destination": "/api/bitbucket?path=:path*" },
+    { "source": "/api/github/:path*", "destination": "/api/github?path=:path*" },
+    { "source": "/api/mabl/:path*", "destination": "/api/mabl?path=:path*" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

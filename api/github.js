@@ -1,5 +1,19 @@
 const GITHUB_API_BASE = 'https://api.github.com';
 
+function resolveProxyPath(req, url) {
+  let path = req.query.path;
+  if (Array.isArray(path)) {
+    path = path.join('/');
+  }
+
+  if (path) {
+    return String(path).replace(/^\/+/, '');
+  }
+
+  // Fallback for hosts that preserve the original rewritten request path.
+  return url.pathname.replace(/^\/api\/github\/?/, '').replace(/^\/+/, '');
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -17,11 +31,7 @@ module.exports = async function handler(req, res) {
 
   const url = new URL(req.url || '', `https://${req.headers.host}`);
 
-  let path = req.query.path;
-  if (Array.isArray(path)) {
-    path = path.join('/');
-  }
-  path = path || '';
+  const path = resolveProxyPath(req, url);
 
   const searchParams = new URLSearchParams(url.search);
   searchParams.delete('path');
