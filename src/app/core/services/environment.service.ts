@@ -52,10 +52,10 @@ export class EnvironmentService {
   /**
    * Get the appropriate base URL for GitHub API
    * - Development: /github-api (uses proxy.conf.js + local credentials)
-   * - Production: /api/github (uses Vercel serverless function)
+   * - Production: https://api.github.com (uses saved local credentials from the browser)
    */
   getGithubApiUrl(): string {
-    return this.isProduction() ? '/api/github' : '/github-api';
+    return this.isProduction() ? 'https://api.github.com' : '/github-api';
   }
 
   /**
