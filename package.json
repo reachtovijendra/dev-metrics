@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "node scripts/start-dev.cjs",
-    "start:angular": "ng serve",
+    "start:angular": "ng serve --port 4300",
     "start:config-api": "node scripts/developer-config-api.cjs",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",

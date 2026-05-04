@@ -48,6 +48,7 @@ module.exports = async function handler(req, res) {
       'Authorization': `Bearer ${token}`,
       'Accept': 'application/vnd.github+json',
       'Content-Type': 'application/json',
+      'User-Agent': 'dev-metrics-dashboard',
       'X-GitHub-Api-Version': '2022-11-28'
     };
 

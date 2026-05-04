@@ -9,14 +9,27 @@ const commands = [
   {
     name: 'angular',
     command: process.platform === 'win32' ? 'npx.cmd' : 'npx',
-    args: ['ng', 'serve']
+    args: ['ng', 'serve', '--port', '4300']
   }
 ];
 
 const children = commands.map(({ name, command, args }) => {
   const child = spawn(command, args, {
-    stdio: 'inherit',
+    stdio: ['ignore', 'pipe', 'pipe'],
     shell: false
+  });
+
+  child.stdout.on('data', chunk => {
+    process.stdout.write(`[${name}] ${chunk}`);
+  });
+
+  child.stderr.on('data', chunk => {
+    process.stderr.write(`[${name}] ${chunk}`);
+  });
+
+  child.on('error', error => {
+    console.error(`[${name}] failed to start:`, error);
+    shutdown(1);
   });
 
   child.on('exit', code => {

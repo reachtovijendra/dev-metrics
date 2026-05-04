@@ -538,7 +538,17 @@ export class GithubService {
   }
 
   testConnection(): Observable<boolean> {
-    return this.http.get<unknown>(`${this.baseUrl}/user`).pipe(
+    const organization = this.credentialsService.getGithubCredentials()?.organization?.trim();
+    if (!organization) {
+      return of(false);
+    }
+
+    return this.http.get<GithubSearchResponse>(`${this.baseUrl}/search/issues`, {
+      params: new HttpParams()
+        .set('q', `is:pr org:${organization}`)
+        .set('per_page', '1')
+        .set('page', '1')
+    }).pipe(
       map(() => true),
       catchError(() => of(false))
     );

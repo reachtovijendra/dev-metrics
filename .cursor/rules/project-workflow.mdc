@@ -9,3 +9,4 @@ alwaysApply: true
 - This project does not use JIRA ticket IDs for commit messages unless the user explicitly provides one.
 - Pushing to `main` is expected to trigger the configured Vercel deployment automatically.
 - There are no separate deployment environments for normal workflow; treat `main` as the deployable branch.
+- Always run the local Angular dev server on port `4300`; do not use `4200` for this project because another local process uses it.
