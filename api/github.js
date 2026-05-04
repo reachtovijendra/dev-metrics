@@ -23,10 +23,15 @@ module.exports = async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const token = process.env.GITHUB_TOKEN;
+  const incomingAuthorization = req.headers.authorization || req.headers.Authorization;
+  const token = process.env.GITHUB_TOKEN || (
+    typeof incomingAuthorization === 'string' && incomingAuthorization.startsWith('Bearer ')
+      ? incomingAuthorization.slice('Bearer '.length)
+      : ''
+  );
 
   if (!token) {
-    return res.status(500).json({ error: 'GitHub token not configured' });
+    return res.status(401).json({ error: 'GitHub token not configured' });
   }
 
   const url = new URL(req.url || '', `https://${req.headers.host}`);

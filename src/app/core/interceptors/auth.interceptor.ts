@@ -10,8 +10,24 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
   
   let modifiedReq = req;
   
-  // In production, Vercel serverless functions handle authentication
-  // Skip adding client-side auth headers for /api/* routes
+  if (req.url.startsWith('/api/github')) {
+    const githubCreds = credentialsService.getGithubCredentials();
+    if (githubCreds?.token) {
+      modifiedReq = req.clone({
+        setHeaders: {
+          'Authorization': `Bearer ${githubCreds.token}`,
+          'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      });
+    }
+
+    return next(modifiedReq);
+  }
+
+  // In production, most Vercel serverless functions handle authentication.
+  // GitHub is handled above so local Settings credentials can be used when
+  // GITHUB_TOKEN is not configured in Vercel.
   if (req.url.startsWith('/api/')) {
     return next(req).pipe(
       catchError((error: HttpErrorResponse) => {
